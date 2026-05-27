@@ -5,7 +5,7 @@ Generates executive summaries using an LLM.
 
 from fastapi import APIRouter, HTTPException, status
 from app.models.schemas import SummarizationRequest, SummarizationResponse, ErrorResponse
-from app.services.summary_service.generate_contract_summary
+from app.services.summary_service import generate_contract_summary
 
 router = APIRouter()
 

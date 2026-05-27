@@ -10,10 +10,9 @@ const Navbar = () => {
           AraContract Analyzer
         </Link>
         <div className="navbar-links">
-          <Link to="/">Home</Link>
-          <Link to="/analysis">Analysis</Link>
-          <Link to="/chat">Q&A</Link>
-          <Link to="/compare">Compare</Link>
+          <Link to="/">الرئيسية</Link>
+          <Link to="/analysis">تحليل العقود</Link>
+          <Link to="/compare">مقارنة عقدين</Link>
         </div>
       </div>
     </nav>

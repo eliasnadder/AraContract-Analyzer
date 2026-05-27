@@ -9,6 +9,9 @@ import os
 import shutil
 from pathlib import Path
 from typing import List
+import logging
+
+logger = logging.getLogger(__name__)
 
 from app.services.extraction_service import extract_text_from_file
 from app.models.schemas import UploadResponse, ErrorResponse

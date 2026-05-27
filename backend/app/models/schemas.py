@@ -19,6 +19,14 @@ class UploadResponse(BaseModel):
 
 
 # ========================
+# Error Schemas
+# ========================
+class ErrorResponse(BaseModel):
+    message: str = Field(..., description="Error message describing what went wrong")
+    details: Optional[Any] = Field(None, description="Optional additional error details")
+
+
+# ========================
 # Segmentation Schemas
 # ========================
 class SegmentationRequest(BaseModel):
@@ -26,7 +34,7 @@ class SegmentationRequest(BaseModel):
 
 
 class SegmentationResponse(BaseModel):
-    clauses: List[str] = Field(..., Description="List of segmented clauses")
+    clauses: List[str] = Field(..., description="List of segmented clauses")
     count: int = Field(..., description="Number of clauses identified")
     message: str = Field(default="Text segmented successfully")
 
@@ -43,6 +51,7 @@ class ClassificationResponse(BaseModel):
     predicted_risk_level: str = Field(..., description="Predicted risk level (low, medium, high)")
     type_clause_probabilities: Dict[str, float] = Field(..., description="Probability distribution over clause types")
     risk_level_probabilities: Dict[str, float] = Field(..., description="Probability distribution over risk levels")
+    warning: Optional[str] = Field(None, description="Explanatory warning text if high risk")
 
 
 class BatchClassificationRequest(BaseModel):
@@ -65,6 +74,28 @@ class SummarizationRequest(BaseModel):
 class SummarizationResponse(BaseModel):
     summary: str = Field(..., description="Generated executive summary (3-5 sentences in Arabic)")
     message: str = Field(default="Executive summary generated successfully")
+
+
+# ========================
+# Analysis Schemas (FR-5 / FR-6)
+# ========================
+class AnalyzedClause(BaseModel):
+    text: str = Field(..., description="Clause text")
+    predicted_type_clause: str = Field(..., description="Predicted canonical type")
+    type_display_name: str = Field(..., description="Arabic display name of type")
+    predicted_risk_level: str = Field(..., description="Predicted risk level")
+    risk_display_name: str = Field(..., description="Arabic display name of risk")
+    warning: str = Field(default="", description="Explanatory warning text if high risk")
+
+
+class AnalysisResponse(BaseModel):
+    filename: str = Field(..., description="Name of the analyzed contract file")
+    is_scanned: bool = Field(..., description="Whether the file was scanned")
+    clauses: List[AnalyzedClause] = Field(..., description="List of analyzed clauses")
+    summary: str = Field(..., description="Executive summary of the contract")
+    stats: Dict[str, Any] = Field(..., description="Counts of clauses by type and risk level")
+    message: str = Field(default="Contract analysis completed successfully")
+
 
 
 # ========================

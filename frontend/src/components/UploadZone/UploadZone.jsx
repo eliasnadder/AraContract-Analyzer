@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './UploadZone.css';
 
 const UploadZone = () => {
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
-  const [extractedText, setExtractedText] = useState('');
-  const [isScanned, setIsScanned] = useState(false);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   const handleFileChange = (e) => {
     setFile(e.target.files[0]);
@@ -28,57 +28,85 @@ const UploadZone = () => {
 
   const handleUpload = async () => {
     if (!file) {
-      setError('Please select a file');
+      setError('يرجى اختيار ملف أولاً');
       return;
     }
-
     setUploading(true);
     setError(null);
-
     const formData = new FormData();
     formData.append('file', file);
-
+    
     try {
-      const response = await axios.post('/api/contract/upload', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+      // Call the main unified analyze endpoint
+      const response = await axios.post('/api/contract/analyze', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
-
-      setExtractedText(response.data.extracted_text);
-      setIsScanned(response.data.is_scanned);
+      
+      // Store the analysis results in localStorage for the Analysis page to read
+      localStorage.setItem('analysisResults', JSON.stringify(response.data));
+      
+      // Navigate to the analysis results page
+      navigate('/analysis');
     } catch (err) {
-      setError(err.response?.data?.message || 'Upload failed');
+      console.error(err);
+      setError(err.response?.data?.message || 'فشلت عملية رفع العقد وتحليله. يرجى التحقق من تشغيل الخادم.');
     } finally {
       setUploading(false);
     }
   };
 
   return (
-    <div className="upload-zone">
-      <h2>رفع عقد للتحليل</h2>
-      <div
-        className={`upload-dropzone ${file || uploading ? 'has-file' : ''}`}
-        onDragOver={handleDragOver}
-        onDrop={handleDrop}
-      >
-        <p>اسحب وافلت الملف هنا</p>
-        <p>أو</p>
-        <input type="file" accept=".pdf,.png,.jpg,.jpeg,.tiff,.bmp" onChange={handleFileChange} />
-        <button onClick={handleUpload} disabled={!file || uploading}>
-          {uploading ? 'جاري الرفع...' : 'رفع الملف'}
+    <div className="upload-container">
+      <div className="glass-panel upload-zone">
+        <h2>تحليل عقد جديد</h2>
+        <p className="upload-subtitle">ارفع عقدك بصيغة PDF أو كصورة وسيقوم النظام باستخراج البنود وتحليل المخاطر فوراً</p>
+        
+        <div 
+          className={`upload-dropzone ${file ? 'has-file' : ''} ${uploading ? 'uploading' : ''}`}
+          onDragOver={handleDragOver} 
+          onDrop={handleDrop}
+        >
+          <div className="upload-icon">📁</div>
+          {file ? (
+            <div className="file-info">
+              <span className="file-name">{file.name}</span>
+              <span className="file-size">({(file.size / (1024 * 1024)).toFixed(2)} MB)</span>
+            </div>
+          ) : (
+            <>
+              <p className="drop-text">اسحب وأفلت ملف العقد هنا</p>
+              <p className="or-text">أو</p>
+            </>
+          )}
+          
+          <input 
+            type="file" 
+            id="file-input"
+            accept=".pdf,.png,.jpg,.jpeg,.tiff,.bmp" 
+            onChange={handleFileChange} 
+            disabled={uploading}
+            style={{ display: 'none' }}
+          />
+          <label htmlFor="file-input" className="file-select-btn">
+            {file ? 'تغيير الملف' : 'اختر ملف من جهازك'}
+          </label>
+        </div>
+
+        {error && <div className="error-message">{error}</div>}
+
+        <button 
+          className="submit-btn" 
+          onClick={handleUpload} 
+          disabled={!file || uploading}
+        >
+          {uploading ? (
+            <>
+              <span className="spinner"></span>
+              جاري تحليل العقد واستخراج البنود...
+            </>
+          ) : 'ابدأ التحليل الذكي'}
         </button>
       </div>
-
-      {extractedText && (
-        <div className="extracted-text-preview">
-          <h3>النص المستخرج:</h3>
-          <p>{extractedText.slice(0, 500)}{extractedText.length > 500 ? '...' : ''}</p>
-          <p>تم الاستخراج عبر {'OCR' if isScanned else 'الاستخراج المباشر'} من PDF</p>
-        </div>
-      )}
-
-      {error && <div className="error">{error}</div>}
     </div>
   );
 };

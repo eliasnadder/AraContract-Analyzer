@@ -1,0 +1,47 @@
+# AraContract Analyzer - Models .gitignore
+
+# === Model Checkpoints (Large Binary Files) ===
+# Store trained models externally or use Git LFS
+checkpoints/
+*.pt
+*.pth
+*.bin
+*.onnx
+*.h5
+*.safetensors
+best_model.pt
+aracontract_classifier.pt
+
+# === Training Artifacts ===
+logs/
+runs/
+*.log
+tensorboard/
+
+# === Python Cache ===
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+
+# === Jupyter Notebooks ===
+.ipynb_checkpoints/
+
+# === IDE ===
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# === Temporary Files ===
+*.tmp
+*.bak
+tmp/
+
+# === Processed Data ===
+# Keep raw data, ignore processed
+processed/
+cached/
+*.pkl
+*.parquet

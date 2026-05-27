@@ -1,0 +1,35 @@
+# AraContract Analyzer - Data .gitignore
+
+# === Dataset Files ===
+# To keep the repository small, consider storing large datasets externally.
+# Uncomment the lines below if you want to exclude data files:
+
+# === Raw Data (Large Files) ===
+# *.jsonl
+# *.json
+# *.csv
+# *.txt
+
+# === Processed Data ===
+processed/
+*.pkl
+*.parquet
+*.feather
+*.arrow
+
+# === Cache ===
+cache/
+*.cache
+
+# === Temporary Files ===
+*.tmp
+*.bak
+
+# === Backups ===
+*.bak
+*.backup
+
+# Note: If using git-lfs for version control of data files:
+# 1. Install git-lfs: git lfs install
+# 2. Track files: git lfs track "*.jsonl"
+# 3. Commit: git add .gitattributes
