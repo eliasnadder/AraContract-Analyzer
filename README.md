@@ -140,24 +140,24 @@ curl -X POST http://localhost:8000/api/contract/compare \
 
 ## Clause Types
 
-| Type | Arabic | Description |
-|------|--------|-------------|
-| `general_provisions` | أحكام عامة | General provisions |
-| `payment_financial` | الشؤون المالية والدفع | Payment & financial terms |
-| `party_obligations` | التزامات الأطراف | Party obligations |
-| `duration_expiration` | المدة والانتهاء | Duration & expiration |
-| `termination` | الإنهاء والفسخ | Termination |
-| `penalties_damages` | العقوبات والتعويضات | Penalties & damages |
-| `dispute_resolution` | حل النزاعات | Dispute resolution |
-| `intellectual_property` | الملكية الفكرية | Intellectual property |
+| Type                     | Arabic                 | Description               |
+|--------------------------|------------------------|---------------------------|
+| `general_provisions`     | أحكام عامة             | General provisions        |
+| `payment_financial`      | الشؤون المالية والدفع  | Payment & financial terms |
+| `party_obligations`      | التزامات الأطراف       | Party obligations         |
+| `duration_expiration`    | المدة والانتهاء         | Duration & expiration     |
+| `termination`            | الإنهاء والفسخ         | Termination               |
+| `penalties_damages`      | العقوبات والتعويضات    | Penalties & damages       |
+| `dispute_resolution`     | حل النزاعات            | Dispute resolution        |
+| `intellectual_property`  | الملكية الفكرية        | Intellectual property     |
 
 ## Risk Levels
 
-| Level | Arabic | Description |
-|-------|--------|-------------|
-| `low` | منخفض | Standard clauses |
-| `medium` | متوسط | Requires attention |
-| `high` | عالي | Potentially unfair/risky |
+| Level    | Arabic | Description              |
+|----------|--------|--------------------------|
+| `low`    | منخفض  | Standard clauses         |
+| `medium` | متوسط  | Requires attention       |
+| `high`   | عالي   | Potentially unfair/risky |
 
 ## Model Information
 
@@ -165,6 +165,42 @@ curl -X POST http://localhost:8000/api/contract/compare \
 - **Task**: Multi-label classification (type + risk)
 - **Training**: See `AraContract_Training_Colab.ipynb` for training notebook
 - **Checkpoint**: `models/checkpoints/aracontract_v1_best.pt`
+
+## Training History & Plots
+
+- **Best Avg F1:** 0.8807 (Epoch 4)
+- **Test Type F1:** 0.8699 — accuracy 87.01%
+- **Test Risk F1:** 0.8485 — accuracy 85.86%
+- **Training epochs:** 5 (see full training log in `Notes.md`)
+
+A detailed interactive report with epoch curves and per-class F1 visualizations is available in the repository: [training_results_analysis.html](training_results_analysis.html).
+
+Quick ways to view the report locally:
+
+```bash
+# Open the HTML file directly on Linux
+xdg-open training_results_analysis.html
+
+# Or serve the repo and view in a browser
+python -m http.server 8000
+# then open http://localhost:8000/training_results_analysis.html
+```
+
+The training logs and per-step metrics are saved in `Notes.md` and the notebook `AraContract_Training_Colab.ipynb` — you can re-run the notebook to reproduce training plots and regenerate the HTML report.
+
+### Plots (generated)
+
+Epoch F1 curve (generated):
+
+![Epoch F1](outputs/epoch_f1.png)
+
+Per-class F1 (generated):
+
+![Per-class F1](outputs/class_f1.png)
+
+Class metrics table (generated):
+
+![Class metrics table](outputs/class_table.png)
 
 ## Python Usage (Direct Inference)
 
@@ -185,9 +221,9 @@ results = model.predict_batch(["clause 1", "clause 2"])
 
 ## File Upload Limits
 
-| Setting | Value |
-|---------|-------|
-| Max file size | 20 MB |
+| Setting         | Value                          |
+|-----------------|--------------------------------|
+| Max file size   | 20 MB                          |
 | Allowed formats | PDF, PNG, JPG, JPEG, TIFF, BMP |
 
 ## Configuration
