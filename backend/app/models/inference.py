@@ -59,7 +59,14 @@ class AraContractInference:
                 logger.info(f"Loading classifier model from {model_path}...")
                 self.tokenizer = AutoTokenizer.from_pretrained("CAMeL-Lab/bert-base-arabic-camelbert-msa")
                 self.model = AraContractClassifier()
-                self.model.load_state_dict(torch.load(model_path, map_location=self.device))
+                # Load checkpoint - handle both direct state_dict and wrapped (Colab) format
+                checkpoint = torch.load(model_path, map_location=self.device, weights_only=True)
+                # Colab saves with 'model_state_dict' wrapper, extract if present
+                if isinstance(checkpoint, dict) and "model_state_dict" in checkpoint:
+                    state_dict = checkpoint["model_state_dict"]
+                else:
+                    state_dict = checkpoint
+                self.model.load_state_dict(state_dict)
                 self.model.to(self.device)
                 self.model.eval()
                 self.is_fallback = False

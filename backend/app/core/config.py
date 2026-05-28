@@ -2,8 +2,8 @@
 Application configuration settings.
 """
 
-from pydantic import BaseSettings
-from typing import List, Union
+from pydantic_settings import BaseSettings
+from typing import List
 import secrets
 
 
@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     ALLOWED_EXTENSIONS: List[str] = [".pdf", ".png", ".jpg", ".jpeg", ".tiff", ".bmp"]
 
     # Model paths
-    CLASSIFIER_MODEL_PATH: str = "./models/checkpoints/best_model.pt"
+    CLASSIFIER_MODEL_PATH: str = "../models/checkpoints/aracontract_v1_best.pt"
     EMBEDDING_MODEL_NAME: str = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
     LLM_MODEL_NAME: str = "Qwen/Qwen2.5-7B-Instruct"
 
