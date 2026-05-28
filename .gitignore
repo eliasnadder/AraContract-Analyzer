@@ -1,10 +1,38 @@
-# AraContract Analyzer - Root .gitignore
-
-# === Python ===
+```
+# Python
 __pycache__/
-*.py[cod]
-*$py.class
-*.so
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+.ENV
+.python-version
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+*.pot
+*.po
+*~
+.pytest_cache/
+.hypothesis/
+.ipython/
+.ipynb_checkpoints/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb
+
+# Distribution / packaging
 .Python
 build/
 develop-eggs/
@@ -22,67 +50,28 @@ wheels/
 .installed.cfg
 *.egg
 
-# === Virtual Environments ===
-# Keep backend/.venv/ ignored separately
+# Environment
+.env
+.venv
+env/
 venv/
 ENV/
-env/
-.venv/
+env.bak/
+venv.bak/
 
-# === IDE ===
-.idea/
+# IDE
 .vscode/
+.idea/
 *.swp
 *.swo
 *~
-.project
-.pydevproject
-.settings/
 
-# === Jupyter Notebooks ===
-.ipynb_checkpoints/
-*.ipynb_checkpoints
-
-# === Model Checkpoints & Data ===
-# Large binary files - store externally or in Git LFS
-*.pt
-*.pth
-*.bin
-*.onnx
-*.h5
-checkpoints/
-models/checkpoints/
-
-# === Logs ===
-*.log
-logs/
-
-# === Environment Variables ===
-.env
-.env.local
-.env.*.local
-*.env
-
-# === OS Files ===
+# OS
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
-desktop.ini
-
-# === Temporary Files ===
-tmp/
-temp/
-*.tmp
-*.bak
-
-# === Codegraph ===
-.codegraph/
-
-# === Testing ===
-.pytest_cache/
-.coverage
-htmlcov/
-.tox/
-
-# === Documentation ===
-docs/_build/
-site/
+```
