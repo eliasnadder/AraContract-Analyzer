@@ -111,6 +111,7 @@ def train_epoch(model, dataloader, optimizer, scheduler, device, scaler=None):
                 input_ids, attention_mask, type_labels, risk_labels
             )
             loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             optimizer.step()
 
         if scheduler is not None:
