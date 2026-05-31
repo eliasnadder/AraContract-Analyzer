@@ -45,6 +45,12 @@ _SUBCLAUSE_PATTERN = re.compile(
     re.UNICODE | re.MULTILINE,
 )
 
+# Ordinal markers fallback: أولاً:, ثانياً:, ثالثاً:, etc.
+_ORDINAL_PATTERN = re.compile(
+    r'(?:^|\n)\s*(أولاً|ثانياً|ثالثاً|رابعاً|خامساً|سادساً|سابعاً|ثامناً|تاسعاً|عاشراً)\s*[:\.\s]',
+    re.UNICODE | re.MULTILINE,
+)
+
 
 # ── Text Helpers ───────────────────────────────────────────────────────────────
 
@@ -156,6 +162,21 @@ def _extract_from_single_contract(text: str) -> List[str]:
 
     # 2. Fallback to paragraphs if no article patterns found
     if not articles:
+        # Check for ordinal markers (أولاً:, ثانياً:, etc.) as an alternative split
+        ordinal_matches = list(_ORDINAL_PATTERN.finditer(text))
+        if len(ordinal_matches) > 1:
+            # Split by ordinal markers
+            clauses = []
+            for i, m in enumerate(ordinal_matches):
+                start = m.start()
+                end = ordinal_matches[i + 1].start() if i + 1 < len(ordinal_matches) else len(text)
+                clause_text = text[start:end].strip()
+                clause_text = clean_clause_text(clause_text)
+                if len(clause_text) >= 50:
+                    clauses.append(clause_text)
+            return clauses
+        
+        # Standard paragraph fallback
         paragraphs = [p.strip() for p in text.split("\n\n") if len(p.strip()) > 60]
         articles = [{"article_num": str(i + 1), "text": p} for i, p in enumerate(paragraphs)]
 
