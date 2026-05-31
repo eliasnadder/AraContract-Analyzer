@@ -11,26 +11,33 @@ from datetime import datetime
 # Upload Schemas
 # ========================
 class UploadResponse(BaseModel):
-    filename: str = Field(..., description="Original filename of the uploaded file")
+    filename: str = Field(...,
+                          description="Original filename of the uploaded file")
     file_size: int = Field(..., description="Size of the file in bytes")
-    is_scanned: bool = Field(..., description="Whether the file was detected as scanned (requiring OCR)")
-    extracted_text: str = Field(..., description="The text extracted from the file")
-    message: str = Field(default="File uploaded and text extracted successfully")
+    is_scanned: bool = Field(
+        ..., description="Whether the file was detected as scanned (requiring OCR)")
+    extracted_text: str = Field(...,
+                                description="The text extracted from the file")
+    message: str = Field(
+        default="File uploaded and text extracted successfully")
 
 
 # ========================
 # Error Schemas
 # ========================
 class ErrorResponse(BaseModel):
-    message: str = Field(..., description="Error message describing what went wrong")
-    details: Optional[Any] = Field(None, description="Optional additional error details")
+    message: str = Field(...,
+                         description="Error message describing what went wrong")
+    details: Optional[Any] = Field(
+        None, description="Optional additional error details")
 
 
 # ========================
 # Segmentation Schemas
 # ========================
 class SegmentationRequest(BaseModel):
-    text: str = Field(..., description="Raw contract text to segment into clauses")
+    text: str = Field(...,
+                      description="Raw contract text to segment into clauses")
 
 
 class SegmentationResponse(BaseModel):
@@ -39,27 +46,45 @@ class SegmentationResponse(BaseModel):
     message: str = Field(default="Text segmented successfully")
 
 
+class FileSegmentationResponse(BaseModel):
+    filename: str = Field(..., description="Original filename")
+    is_scanned: bool = Field(..., description="Whether OCR was used")
+    extracted_text_preview: str = Field(...,
+                                        description="First 500 chars of extracted text")
+    clauses: List[str] = Field(..., description="List of segmented clauses")
+    count: int = Field(..., description="Number of clauses found")
+    message: str = Field(default="File segmented successfully")
+
 # ========================
 # Classification Schemas
 # ========================
+
+
 class ClassificationRequest(BaseModel):
     text: str = Field(..., description="Clause text to classify")
 
 
 class ClassificationResponse(BaseModel):
-    predicted_type_clause: str = Field(..., description="Predicted clause type")
-    predicted_risk_level: str = Field(..., description="Predicted risk level (low, medium, high)")
-    type_clause_probabilities: Dict[str, float] = Field(..., description="Probability distribution over clause types")
-    risk_level_probabilities: Dict[str, float] = Field(..., description="Probability distribution over risk levels")
-    warning: Optional[str] = Field(None, description="Explanatory warning text if high risk")
+    predicted_type_clause: str = Field(...,
+                                       description="Predicted clause type")
+    predicted_risk_level: str = Field(...,
+                                      description="Predicted risk level (low, medium, high)")
+    type_clause_probabilities: Dict[str, float] = Field(
+        ..., description="Probability distribution over clause types")
+    risk_level_probabilities: Dict[str, float] = Field(
+        ..., description="Probability distribution over risk levels")
+    warning: Optional[str] = Field(
+        None, description="Explanatory warning text if high risk")
 
 
 class BatchClassificationRequest(BaseModel):
-    texts: List[str] = Field(..., description="List of clause texts to classify")
+    texts: List[str] = Field(...,
+                             description="List of clause texts to classify")
 
 
 class BatchClassificationResponse(BaseModel):
-    results: List[ClassificationResponse] = Field(..., description="List of classification results for each input text")
+    results: List[ClassificationResponse] = Field(
+        ..., description="List of classification results for each input text")
     count: int = Field(..., description="Number of texts processed")
 
 
@@ -68,11 +93,13 @@ class BatchClassificationResponse(BaseModel):
 # ========================
 class SummarizationRequest(BaseModel):
     text: str = Field(..., description="Full contract text")
-    classified_clauses: List[Dict[str, Any]] = Field(..., description="List of classified clauses with type and risk")
+    classified_clauses: List[Dict[str, Any]] = Field(
+        ..., description="List of classified clauses with type and risk")
 
 
 class SummarizationResponse(BaseModel):
-    summary: str = Field(..., description="Generated executive summary (3-5 sentences in Arabic)")
+    summary: str = Field(...,
+                         description="Generated executive summary (3-5 sentences in Arabic)")
     message: str = Field(default="Executive summary generated successfully")
 
 
@@ -81,34 +108,44 @@ class SummarizationResponse(BaseModel):
 # ========================
 class AnalyzedClause(BaseModel):
     text: str = Field(..., description="Clause text")
-    predicted_type_clause: str = Field(..., description="Predicted canonical type")
-    type_display_name: str = Field(..., description="Arabic display name of type")
+    predicted_type_clause: str = Field(...,
+                                       description="Predicted canonical type")
+    type_display_name: str = Field(...,
+                                   description="Arabic display name of type")
     predicted_risk_level: str = Field(..., description="Predicted risk level")
-    risk_display_name: str = Field(..., description="Arabic display name of risk")
-    warning: str = Field(default="", description="Explanatory warning text if high risk")
+    risk_display_name: str = Field(...,
+                                   description="Arabic display name of risk")
+    warning: str = Field(
+        default="", description="Explanatory warning text if high risk")
 
 
 class AnalysisResponse(BaseModel):
-    filename: str = Field(..., description="Name of the analyzed contract file")
+    filename: str = Field(...,
+                          description="Name of the analyzed contract file")
     is_scanned: bool = Field(..., description="Whether the file was scanned")
-    clauses: List[AnalyzedClause] = Field(..., description="List of analyzed clauses")
+    clauses: List[AnalyzedClause] = Field(...,
+                                          description="List of analyzed clauses")
     summary: str = Field(..., description="Executive summary of the contract")
-    stats: Dict[str, Any] = Field(..., description="Counts of clauses by type and risk level")
+    stats: Dict[str, Any] = Field(...,
+                                  description="Counts of clauses by type and risk level")
     message: str = Field(default="Contract analysis completed successfully")
-
 
 
 # ========================
 # Question-Answering Schemas
 # ========================
 class QARequest(BaseModel):
-    contract_id: str = Field(..., description="Unique identifier for the contract session")
-    question: str = Field(..., description="Arabic question about the contract")
+    contract_id: str = Field(...,
+                             description="Unique identifier for the contract session")
+    question: str = Field(...,
+                          description="Arabic question about the contract")
 
 
 class QAResponse(BaseModel):
-    answer: str = Field(..., description="Answer to the question based on contract content")
-    sources: List[str] = Field(..., description="List of text chunks used to generate the answer")
+    answer: str = Field(...,
+                        description="Answer to the question based on contract content")
+    sources: List[str] = Field(...,
+                               description="List of text chunks used to generate the answer")
     message: str = Field(default="Answer generated successfully")
 
 
@@ -116,7 +153,10 @@ class QAResponse(BaseModel):
 # Comparison Schemas
 # ========================
 class ComparisonResponse(BaseModel):
-    contract1_summary: Dict[str, Any] = Field(..., description="Summary of statistics for contract 1")
-    contract2_summary: Dict[str, Any] = Field(..., description="Summary of statistics for contract 2")
-    differences: List[Dict[str, Any]] = Field(..., description="List of differences found between the two contracts")
+    contract1_summary: Dict[str, Any] = Field(
+        ..., description="Summary of statistics for contract 1")
+    contract2_summary: Dict[str, Any] = Field(
+        ..., description="Summary of statistics for contract 2")
+    differences: List[Dict[str, Any]] = Field(
+        ..., description="List of differences found between the two contracts")
     message: str = Field(default="Contract comparison completed successfully")

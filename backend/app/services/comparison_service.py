@@ -23,7 +23,8 @@ def _analyze_file_for_compare(file_path: str) -> Dict[str, Any]:
     # 2. Segment
     clauses = segment_arabic_text(text)
     if not clauses:
-        paragraphs = [p.strip() for p in text.split('\n') if len(p.strip()) >= 30]
+        # paragraphs = [p.strip() for p in text.split('\n') if len(p.strip()) >= 30]
+        paragraphs = [p.strip() for p in text.split('\n\n') if len(p.strip()) >= 50]
         clauses = paragraphs if paragraphs else [text[:1000]]
         
     # 3. Classify

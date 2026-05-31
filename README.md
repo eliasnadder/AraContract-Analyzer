@@ -93,12 +93,22 @@ curl -X POST http://localhost:8000/api/contract/upload \
   -F "file=@contract.pdf"
 ```
 
-### 3. Segment Text
+### 3. Segment
+
+#### A. Segment text
 
 ```bash
 curl -X POST http://localhost:8000/api/contract/segment \
   -H "Content-Type: application/json" \
   -d '{"text": "المادة الأولى: يلتزم الطرف الأول..."}'
+```
+
+#### B. Segment File
+
+```bash
+curl -X POST http://localhost:8000/api/contract/segment/file \
+  -H "Content-Type: application/json" \
+  -F "file=@/path/to/contract.pdf"
 ```
 
 ### 4. Classify Clause(s)

@@ -1,25 +1,26 @@
 {
-  "total": 5761,
-  "train": 3978,
-  "val": 821,
-  "test": 962,
+  "total": 5251,
+  "train": 3609,
+  "val": 773,
+  "test": 869,
   "splits": {
     "train": 0.7,
     "val": 0.15,
     "test": 0.15
   },
   "clause_types": {
-    "general_provisions": 906,
-    "payment_financial": 1034,
-    "party_obligations": 1361,
-    "duration_expiration": 750,
-    "termination": 457,
-    "penalties_damages": 737,
-    "dispute_resolution": 516
+    "general_provisions": 921,
+    "payment_financial": 1156,
+    "duration_expiration": 755,
+    "termination": 453,
+    "penalties_damages": 751,
+    "dispute_resolution": 516,
+    "party_obligations_b": 298,
+    "party_obligations_a": 401
   },
   "risk_levels": {
-    "low": 4118,
-    "high": 1307,
-    "medium": 336
+    "low": 3793,
+    "high": 1126,
+    "medium": 332
   }
 }

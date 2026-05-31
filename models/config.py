@@ -45,7 +45,8 @@ DEFAULT_SEED = 42
 TYPE_LABELS = [
     "general_provisions",
     "payment_financial",
-    "party_obligations",
+    "party_obligations_a",
+    "party_obligations_b",
     "duration_expiration",
     "termination",
     "penalties_damages",

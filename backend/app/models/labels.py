@@ -27,8 +27,8 @@ TYPE_DISPLAY_NAMES_AR = {
     "general_provisions": "أحكام عامة",
 }
 
-# Raw model classes (7 classes in dataset)
-MODEL_TYPE_LABELS = [
+# Raw model classes (legacy 7 classes)
+MODEL_TYPE_LABELS_7 = [
     "general_provisions", 
     "payment_financial", 
     "party_obligations",
@@ -37,6 +37,21 @@ MODEL_TYPE_LABELS = [
     "penalties_damages", 
     "dispute_resolution",
 ]
+
+# Raw model classes (new 8 classes)
+MODEL_TYPE_LABELS_8 = [
+    "general_provisions",
+    "payment_financial",
+    "party_obligations_a",
+    "party_obligations_b",
+    "duration_expiration",
+    "termination",
+    "penalties_damages",
+    "dispute_resolution",
+]
+
+# Default (for backwards compatibility)
+MODEL_TYPE_LABELS = MODEL_TYPE_LABELS_7
 
 MODEL_TYPE_LABEL_TO_IDX = {label: i for i, label in enumerate(MODEL_TYPE_LABELS)}
 MODEL_TYPE_IDX_TO_LABEL = {i: label for i, label in enumerate(MODEL_TYPE_LABELS)}
