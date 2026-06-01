@@ -20,7 +20,8 @@ router = APIRouter()
 @router.post(
     "/compare",
     response_model=ComparisonResponse,
-    responses={400: {"model": ErrorResponse}, 413: {"model": ErrorResponse}, 500: {"model": ErrorResponse}},
+    responses={400: {"model": ErrorResponse}, 413: {
+        "model": ErrorResponse}, 500: {"model": ErrorResponse}},
 )
 async def compare_contract_endpoint(
     file1: UploadFile = File(...),
@@ -76,7 +77,8 @@ async def compare_contract_endpoint(
 
         return JSONResponse(
             status_code=status.HTTP_200_OK,
-            content=comparison_result.dict(),
+            # content=comparison_result.dict(),
+            content=comparison_result.model_dump()
         )
 
     except Exception as e:

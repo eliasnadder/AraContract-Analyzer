@@ -8,8 +8,8 @@ import numpy as np
 CLAUSE_TYPES = [
     'general_provisions',
     'payment_financial',
-    'party_one_obligations',  # تم الفصل
-    'party_two_obligations',  # تم الفصل
+    'party_obligations_a',  # تم الفصل
+    'party_obligations_b',  # تم الفصل
     'duration_expiration',
     'termination',
     'penalties_damages',

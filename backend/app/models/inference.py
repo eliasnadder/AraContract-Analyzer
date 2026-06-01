@@ -13,7 +13,8 @@ from transformers import AutoTokenizer, AutoModel
 import logging
 
 from app.models.labels import (
-    MODEL_TYPE_LABELS,
+    MODEL_TYPE_LABELS_7,
+    MODEL_TYPE_LABELS_8,
     RISK_LABELS,
     map_model_output_to_canonical,
     MODEL_TYPE_LABEL_TO_IDX,
@@ -25,12 +26,12 @@ logger = logging.getLogger(__name__)
 
 # Re-define model class structure for loading state dict
 class AraContractClassifier(nn.Module):
-    def __init__(self, model_name: str = "CAMeL-Lab/bert-base-arabic-camelbert-msa"):
+    def __init__(self, model_name: str = "CAMeL-Lab/bert-base-arabic-camelbert-msa", num_type_classes: int = 7):
         super().__init__()
         self.encoder = AutoModel.from_pretrained(model_name)
         hidden_size = self.encoder.config.hidden_size
         self.dropout = nn.Dropout(0.1)
-        self.type_classifier = nn.Linear(hidden_size, len(MODEL_TYPE_LABELS))
+        self.type_classifier = nn.Linear(hidden_size, num_type_classes)
         self.risk_classifier = nn.Linear(hidden_size, len(RISK_LABELS))
 
     def forward(self, input_ids, attention_mask=None):
@@ -52,13 +53,13 @@ class AraContractInference:
         self.tokenizer = None
         self.model = None
         self.is_fallback = True
+        self.labels = MODEL_TYPE_LABELS_8  # Default to 8-class labels (canonical)
         
         # Check if checkpoint exists
         if os.path.exists(model_path):
             try:
                 logger.info(f"Loading classifier model from {model_path}...")
                 self.tokenizer = AutoTokenizer.from_pretrained("CAMeL-Lab/bert-base-arabic-camelbert-msa")
-                self.model = AraContractClassifier()
                 # Load checkpoint - handle both direct state_dict and wrapped (Colab) format
                 checkpoint = torch.load(model_path, map_location=self.device, weights_only=True)
                 # Colab saves with 'model_state_dict' wrapper, extract if present
@@ -66,11 +67,25 @@ class AraContractInference:
                     state_dict = checkpoint["model_state_dict"]
                 else:
                     state_dict = checkpoint
+                
+                # Dynamic shape detection from checkpoint
+                if "type_classifier.weight" in state_dict:
+                    num_classes = state_dict["type_classifier.weight"].shape[0]
+                    if num_classes == 8:
+                        self.labels = MODEL_TYPE_LABELS_8
+                    elif num_classes == 7:
+                        self.labels = MODEL_TYPE_LABELS_7
+                    else:
+                        self.labels = [f"class_{i}" for i in range(num_classes)]
+                else:
+                    self.labels = MODEL_TYPE_LABELS_7
+                
+                self.model = AraContractClassifier(num_type_classes=len(self.labels))
                 self.model.load_state_dict(state_dict)
                 self.model.to(self.device)
                 self.model.eval()
                 self.is_fallback = False
-                logger.info("Classifier model loaded successfully.")
+                logger.info(f"Classifier model loaded successfully with {len(self.labels)} classes.")
             except Exception as e:
                 logger.error(f"Failed to load checkpoint: {e}. Falling back to rule-based classification.")
         else:
@@ -81,7 +96,7 @@ class AraContractInference:
         text_norm = text.replace("أ", "ا").replace("إ", "ا").replace("ة", "ه")
         
         # Heuristics for clause type
-        type_scores = {label: 0.05 for label in MODEL_TYPE_LABELS}
+        type_scores = {label: 0.05 for label in self.labels}
         
         if any(w in text_norm for w in ["دفع", "سداد", "ليرة", "دولار", "مبلغ", "قيمة", "مالي", "رصيد", "ثمن", "دفعات"]):
             type_scores["payment_financial"] = 0.8
@@ -94,7 +109,15 @@ class AraContractInference:
         elif any(w in text_norm for w in ["نزاع", "خلاف", "تحكيم", "محكمة", "قضاء", "صلاحية", "نزاعات"]):
             type_scores["dispute_resolution"] = 0.8
         elif any(w in text_norm for w in ["يلتزم", "يتعهد", "مسؤولية", "الطرف الاول", "الطرف الثاني", "تعهد"]):
-            type_scores["party_obligations"] = 0.8
+            if "party_obligations" in type_scores:
+                type_scores["party_obligations"] = 0.8
+            else:
+                if any(w in text_norm for w in ["الطرف الاول", "المؤجر", "البائع", "صاحب العمل"]):
+                    type_scores["party_obligations_a"] = 0.8
+                elif any(w in text_norm for w in ["الطرف الثاني", "المستاجر", "المشتري", "الموظف"]):
+                    type_scores["party_obligations_b"] = 0.8
+                else:
+                    type_scores["party_obligations_a"] = 0.8
         else:
             type_scores["general_provisions"] = 0.8
             
@@ -114,13 +137,13 @@ class AraContractInference:
         risk_probs = {k: v / sum_risks for k, v in risk_scores.items()}
         pred_risk = max(risk_probs, key=risk_probs.get)
         
-        # Map 7-class model output to canonical 8-class SRS output
+        # Map model output to canonical 8-class SRS output
         canonical_type = map_model_output_to_canonical(pred_type_model, text)
         
         # Generate warning if high risk
         warning = get_warning_for_clause(canonical_type, pred_risk)
         
-        # Build canonical probability dict for the 7 raw model classes
+        # Build canonical probability dict for the raw model classes
         return {
             "predicted_type_clause": canonical_type,
             "predicted_risk_level": pred_risk,
@@ -154,16 +177,16 @@ class AraContractInference:
             pred_type_idx = np.argmax(type_probs)
             pred_risk_idx = np.argmax(risk_probs)
             
-            pred_type_model = MODEL_TYPE_LABELS[pred_type_idx]
+            pred_type_model = self.labels[pred_type_idx]
             pred_risk = RISK_LABELS[pred_risk_idx]
             
-            # Map 7-class model output to canonical 8-class SRS output
+            # Map model output to canonical 8-class SRS output
             canonical_type = map_model_output_to_canonical(pred_type_model, text)
             
             # Get warning
             warning = get_warning_for_clause(canonical_type, pred_risk)
             
-            type_probs_dict = {MODEL_TYPE_LABELS[i]: float(type_probs[i]) for i in range(len(MODEL_TYPE_LABELS))}
+            type_probs_dict = {self.labels[i]: float(type_probs[i]) for i in range(len(self.labels))}
             risk_probs_dict = {RISK_LABELS[i]: float(risk_probs[i]) for i in range(len(RISK_LABELS))}
             
             return {

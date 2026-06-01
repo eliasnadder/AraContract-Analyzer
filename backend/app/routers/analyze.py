@@ -16,20 +16,22 @@ from app.routers.segment import segment_arabic_text
 from app.routers.classify import get_model
 from app.services.summary_service import generate_contract_summary
 from app.models.labels import TYPE_DISPLAY_NAMES_AR, RISK_DISPLAY_NAMES_AR
-from backend.app.core.auth import get_current_user
+# from backend.app.core.auth import get_current_user
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
+
 @router.post(
     "/analyze",
     response_model=AnalysisResponse,
-    responses={400: {"model": ErrorResponse}, 413: {"model": ErrorResponse}, 500: {"model": ErrorResponse}, 503: {"model": ErrorResponse}},
+    responses={400: {"model": ErrorResponse}, 413: {"model": ErrorResponse}, 500: {
+        "model": ErrorResponse}, 503: {"model": ErrorResponse}},
 )
 # async def analyze_contract(
-#     file: UploadFile = File(...), 
+#     file: UploadFile = File(...),
 #     uid: str = Depends(get_current_user)
-# ):    
+# ):
 async def analyze_contract(file: UploadFile = File(...)):
     """
     Accepts a contract file, runs extraction -> segmentation -> classification -> warnings -> summary,
@@ -73,12 +75,15 @@ async def analyze_contract(file: UploadFile = File(...)):
         if not clauses:
             # If no clauses could be segmented, fallback to treating the entire text as a single clause
             # (or splitting by paragraphs) to ensure we always return something.
-            paragraphs = [p.strip() for p in extracted_text.split('\n') if len(p.strip()) >= 30]
+            # paragraphs = [p.strip() for p in extracted_text.split('\n') if len(p.strip()) >= 30]
+            paragraphs = [p.strip() for p in extracted_text.split(
+                '\n\n') if len(p.strip()) >= 50]
             clauses = paragraphs if paragraphs else [extracted_text[:1000]]
 
         # 3. Classify clauses (FR-3 / FR-4)
         model = get_model()
-        classification_results = model.predict_batch(clauses, return_probs=True)
+        classification_results = model.predict_batch(
+            clauses, return_probs=True)
 
         # 4. Map results to canonical schemas and add display names
         analyzed_clauses = []
@@ -105,9 +110,11 @@ async def analyze_contract(file: UploadFile = File(...)):
                 AnalyzedClause(
                     text=text,
                     predicted_type_clause=pred_type,
-                    type_display_name=TYPE_DISPLAY_NAMES_AR.get(pred_type, pred_type),
+                    type_display_name=TYPE_DISPLAY_NAMES_AR.get(
+                        pred_type, pred_type),
                     predicted_risk_level=pred_risk,
-                    risk_display_name=RISK_DISPLAY_NAMES_AR.get(pred_risk, pred_risk),
+                    risk_display_name=RISK_DISPLAY_NAMES_AR.get(
+                        pred_risk, pred_risk),
                     warning=warning
                 )
             )
@@ -142,7 +149,8 @@ async def analyze_contract(file: UploadFile = File(...)):
             message="تم تحليل العقد بنجاح واستخراج البنود والمخاطر."
         )
 
-        return JSONResponse(status_code=status.HTTP_200_OK, content=response.dict())
+        # return JSONResponse(status_code=status.HTTP_200_OK, content=response.dict())
+        return JSONResponse(status_code=status.HTTP_200_OK, content=response.model_dump())
 
     except Exception as e:
         logger.error(f"Error during contract analysis: {e}", exc_info=True)
