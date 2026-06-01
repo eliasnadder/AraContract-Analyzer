@@ -11,6 +11,34 @@ import io
 import os
 from typing import Tuple
 
+import re
+
+
+def _normalize_arabic_pdf_text(text: str) -> str:
+    """
+    إصلاح التشوهات الشائعة في نص PDF العربي المستخرج بـ PyMuPDF.
+    يُطبَّق مرة واحدة على النص الكامل قبل إرساله للـ segmenter.
+    """
+    # ① Hamza Presentation Forms — أكثر تشوه شيوعاً في PDF العربي
+    #    "اإلقامة" → "الإقامة"   "اإلخالل" → "الإخلال"
+    text = text.replace('اإل', 'الإ')
+    text = text.replace('اإل', 'الإ')   # run twice: some PDFs double-encode
+    text = text.replace('األ', 'الأ')
+    text = text.replace('اآل', 'الآ')
+
+    # ② النقطتان في بداية السطر (RTL artifact)
+    #    "\n:الأول السيد" → "\nالأول: السيد"
+    text = re.sub(r'(?m)^:([^\s:،؛\n]{1,40})', r'\1:', text)
+
+    # ③ الأقواس المعكوسة الكاملة: ")(المالك)" → "(المالك)"
+    text = re.sub(r'\)\(([^)(،\n]{1,50})\)', r'(\1)', text)          # مع )
+    text = re.sub(r'\)\(([^)(،\n]{1,50})(?=[،\s\n●]|$)', r'(\1)', text)  # بدون )
+    # ④ كلمة متصقة بنقطة بدون مسافة: "نهاية.كلمة" → "نهاية. كلمة"
+    text = re.sub(r'([.،؛:])([^\s\d\n])', r'\1 \2', text)
+
+    return text
+
+
 def extract_text_from_file(file_path: str) -> Tuple[str, bool]:
     """
     Extract text from a contract file (PDF or image).
@@ -57,10 +85,11 @@ def _extract_text_from_pdf(file_path: str) -> Tuple[str, bool]:
 
     # If we got text and it's not mostly whitespace, assume digital
     if text.strip() and not is_scanned:
-        return text.strip(), False
+        return _normalize_arabic_pdf_text(text.strip()), False
 
     # Otherwise, fall back to OCR
-    return _extract_text_via_ocr(file_path), True
+    ocr_text = _extract_text_via_ocr(file_path)
+    return _normalize_arabic_pdf_text(ocr_text), True
 
 
 def _extract_text_from_image(file_path: str) -> str:

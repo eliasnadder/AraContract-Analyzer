@@ -60,8 +60,40 @@ _ORDINAL_PATTERN = re.compile(
     re.UNICODE | re.MULTILINE,
 )
 
+# Pattern لعلامات الخيار في نماذج العقود
+_OPTION_HEADER_RE = re.compile(
+    r'\[\s*(?:الخيار\s+(?:الأول|الثاني|الثالث|الرابع|[١-٩\d]+)[^\]]*)\]',
+    re.UNICODE,
+)
+
+
+def _clean_preamble(raw: str) -> str:
+    """
+    ينظف نص الـ preamble من:
+    1. علامات اختيار الخيارات  → [ الخيار الأول: ... ]
+    2. الأسطر المشوهة ذات نسبة عربية منخفضة جداً
+    """
+    # ① إزالة option headers
+    text = _OPTION_HEADER_RE.sub('', raw).strip()
+
+    # ② فلترة الأسطر المشوهة سطراً بسطر
+    clean_lines = []
+    for line in text.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        total = len(re.sub(r'\s', '', line))
+        if total == 0:
+            continue
+        arabic = len(re.findall(r'[\u0600-\u06FF]', line))
+        # احتفظ بالسطر فقط إذا كان 60%+ من محتواه عربي
+        if arabic / total >= 0.60:
+            clean_lines.append(line)
+
+    return ' '.join(clean_lines).strip()
 
 # ── Text Helpers ───────────────────────────────────────────────────────────────
+
 
 def normalize_arabic(text: str) -> str:
     """Normalize Arabic text: remove diacritics, unify hamza/alef forms."""
@@ -75,6 +107,7 @@ def normalize_arabic(text: str) -> str:
     return text
 
 # # ── Core Extraction ────────────────────────────────────────────────────────────
+
 
 def split_subclauses(article_text: str, article_num: str) -> list[dict]:
     """
@@ -96,6 +129,9 @@ def split_subclauses(article_text: str, article_num: str) -> list[dict]:
     preamble = article_text[: matches[0].start()].strip()
     preamble = re.sub(r'[\u200b●○]+', '', preamble).strip()
 
+    # ↓↓↓ السطر الجديد: تنظيف بدل الاستخدام المباشر
+    clean_pre = _clean_preamble(preamble)
+
     results = []
     for i, m in enumerate(matches):
         # التقاط الحرف الأبجدي سواء كان بالترتيب الصحيح (أ-) أو المقلوب (-أ)
@@ -110,8 +146,8 @@ def split_subclauses(article_text: str, article_num: str) -> list[dict]:
         sub_body = re.sub(r'[\u200b●○]+', '', sub_body).strip()
 
         # استخدام الـ \n لربط المقدمة بالبند الفرعي كما يفعل step4.py تماماً
-        if preamble and len(preamble) >= 10:
-            full_text = f"{preamble}\n{sub_letter}- {sub_body}"
+        if clean_pre and len(clean_pre) >= 10:
+            full_text = f"{clean_pre}\n{sub_letter}- {sub_body}"
         else:
             full_text = f"{sub_letter}- {sub_body}"
 
@@ -125,6 +161,7 @@ def split_subclauses(article_text: str, article_num: str) -> list[dict]:
         )
 
     return results
+
 
 def clean_clause_text(text: str) -> str:
     """Remove markdown artifacts, fix PDF RTL glitches, and normalize whitespace (step4.py style)."""
@@ -152,6 +189,17 @@ def clean_clause_text(text: str) -> str:
     # 6. توحيد المسافات
     text = re.sub(r'[ \t]+', ' ', text)
     text = re.sub(r'\n{3,}', '\n\n', text)
+
+    # ── إضافات جديدة ──────────────────────────────────────────────────────
+
+    # ⑦ إزالة علامات اختيار الخيارات التي تصل أحياناً لجسم البند
+    text = _OPTION_HEADER_RE.sub('', text)
+
+    # ⑧ إصلاح الأقواس المعكوسة المتبقية (حالات لا يعالجها الـ extractor)
+    text = re.sub(r'\)\(([^)(]{1,60})\)', r'(\1)', text)
+
+    # ⑩ إزالة ○ و ● المتبقية في منتصف الجملة
+    text = re.sub(r'(?<=[^\n])[●○■◆]', ' ', text)
 
     return text.strip()
 
