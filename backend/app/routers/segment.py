@@ -40,9 +40,18 @@ _ARTICLE_PATTERN = re.compile(
 )
 
 _SUBCLAUSE_LETTERS = "أبجدهوزحط"
+# Regex يدعم النصوص النظيفة (أ-) والنصوص المشوهة من الـ PDF (-أ) مع تجاهل النقاط (Bullets)
 _SUBCLAUSE_PATTERN = re.compile(
-    rf"(?:^|\n)[ \t]*([{_SUBCLAUSE_LETTERS}])[ \t]*[-–—][ \t]*(?=\S)",
-    re.UNICODE | re.MULTILINE,
+    # تجاهل الأسطر والنقاط والمسافات الوهمية
+    r"(?:^|\n)[\s●○\u200b]*"
+    r"(?:"
+    r"([أبجدهوزحط])[\s\u200b]*[-–—\.]"  # الحالة الأولى: حرف ثم شريطة (نص نظيف)
+    r"|"
+    # الحالة الثانية: شريطة ثم حرف (تشوه PDF)
+    r"[-–—\.][\s\u200b]*([أبجدهوزحط])"
+    r")"
+    r"[\s\u200b]+",                     # يجب أن يتبعه مسافة ليبدأ النص
+    re.UNICODE | re.MULTILINE
 )
 
 # Ordinal markers fallback: أولاً:, ثانياً:, ثالثاً:, etc.
@@ -65,34 +74,14 @@ def normalize_arabic(text: str) -> str:
     text = text.replace('ى', 'ي')
     return text
 
-
-def clean_clause_text(text: str) -> str:
-    """Remove markdown artifacts and normalize whitespace."""
-    # Remove markdown links: [text](url) → text
-    text = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', text)
-    # Remove standalone URLs
-    text = re.sub(r'https?://\S+', '', text)
-    # Remove bold/italic markers
-    text = re.sub(r'\*{1,2}([^*]*)\*{1,2}', r'\1', text)
-    # Remove heading markers
-    text = re.sub(r'^#{1,6}\s+', '', text, flags=re.MULTILINE)
-    # Remove long decorative lines
-    text = re.sub(r'[—–\-]{5,}', '', text)
-    # Normalize whitespace
-    text = re.sub(r'[ \t]+', ' ', text)
-    text = re.sub(r'\n{3,}', '\n\n', text)
-    return text.strip()
-
-
-# ── Core Extraction ────────────────────────────────────────────────────────────
+# # ── Core Extraction ────────────────────────────────────────────────────────────
 
 def split_subclauses(article_text: str, article_num: str) -> list[dict]:
     """
-    Hybrid sub-clause splitting from step4.py.
+    Hybrid sub-clause splitting exactly matching step4.py's formatting.
     """
     matches = list(_SUBCLAUSE_PATTERN.finditer(article_text))
 
-    # No sub-clauses: return article as-is
     if not matches:
         return [
             {
@@ -103,19 +92,24 @@ def split_subclauses(article_text: str, article_num: str) -> list[dict]:
             }
         ]
 
-    # Preamble: article header before the first marker
+    # التقاط المقدمة وتنظيفها من نقاط الـ PDF الوهمية
     preamble = article_text[: matches[0].start()].strip()
+    preamble = re.sub(r'[\u200b●○]+', '', preamble).strip()
 
     results = []
     for i, m in enumerate(matches):
-        sub_letter = m.group(1)
+        # التقاط الحرف الأبجدي سواء كان بالترتيب الصحيح (أ-) أو المقلوب (-أ)
+        sub_letter = m.group(1) or m.group(2)
 
-        # Body runs from end of this marker to start of next (or end of text)
         body_start = m.end()
-        body_end = matches[i + 1].start() if i + 1 < len(matches) else len(article_text)
+        body_end = matches[i + 1].start() if i + \
+            1 < len(matches) else len(article_text)
         sub_body = article_text[body_start:body_end].strip()
 
-        # Hybrid: prepend preamble so the classifier has full context
+        # تنظيف جسم البند
+        sub_body = re.sub(r'[\u200b●○]+', '', sub_body).strip()
+
+        # استخدام الـ \n لربط المقدمة بالبند الفرعي كما يفعل step4.py تماماً
         if preamble and len(preamble) >= 10:
             full_text = f"{preamble}\n{sub_letter}- {sub_body}"
         else:
@@ -131,6 +125,35 @@ def split_subclauses(article_text: str, article_num: str) -> list[dict]:
         )
 
     return results
+
+def clean_clause_text(text: str) -> str:
+    """Remove markdown artifacts, fix PDF RTL glitches, and normalize whitespace (step4.py style)."""
+    text = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', text)
+    text = re.sub(r'https?://\S+', '', text)
+    text = re.sub(r'\*{1,2}([^*]*)\*{1,2}', r'\1', text)
+    text = re.sub(r'^#{1,6}\s+', '', text, flags=re.MULTILINE)
+    text = re.sub(r'[—–\-]{5,}', '', text)
+
+    # 1. تنظيف رصاصات الـ PDF الوهمية
+    text = re.sub(r'[\u200b●○]+', '', text)
+
+    # 2. دمج الأسطر المكسورة مع الحفاظ على هيكلية الـ Hybrid
+    text = re.sub(r'(?<!\n)\n(?![ \t]*[أبجدهوزحط][ \t]*[-–—\.])', ' ', text)
+
+    # 3. التحسين الجديد: إصلاح التصاق الكلمات بعلامات الترقيم (إضافة مسافة بعد الفاصلة/النقطة إذا تبعها حرف)
+    text = re.sub(r'([،.؛:])(?=[أ-يa-zA-Z])', r'\1 ', text)
+
+    # 4. التحسين الجديد: إصلاح تشوه الأقواس المقلوبة بسبب الـ RTL (مثل: )(المالك -> (المالك))
+    text = re.sub(r'\)\((.*?)(?=[\s،.]|$)', r'(\1)', text)
+
+    # 5. إزالة المسافات الشاذة قبل علامات الترقيم (مثل: العقد . -> العقد.)
+    text = re.sub(r'\s+([،.؛:])', r'\1', text)
+
+    # 6. توحيد المسافات
+    text = re.sub(r'[ \t]+', ' ', text)
+    text = re.sub(r'\n{3,}', '\n\n', text)
+
+    return text.strip()
 
 
 def _extract_articles_single(text: str) -> list[dict]:
@@ -160,7 +183,7 @@ def _extract_from_single_contract(text: str) -> List[str]:
     # 1. Extract articles
     articles = _extract_articles_single(text)
 
-    # 2. Fallback to paragraphs if no article patterns found
+    # 2. Fallback if no article patterns found
     if not articles:
         # Check for ordinal markers (أولاً:, ثانياً:, etc.) as an alternative split
         ordinal_matches = list(_ORDINAL_PATTERN.finditer(text))
@@ -169,16 +192,19 @@ def _extract_from_single_contract(text: str) -> List[str]:
             clauses = []
             for i, m in enumerate(ordinal_matches):
                 start = m.start()
-                end = ordinal_matches[i + 1].start() if i + 1 < len(ordinal_matches) else len(text)
+                end = ordinal_matches[i + 1].start() if i + \
+                    1 < len(ordinal_matches) else len(text)
                 clause_text = text[start:end].strip()
                 clause_text = clean_clause_text(clause_text)
                 if len(clause_text) >= 50:
                     clauses.append(clause_text)
             return clauses
-        
+
         # Standard paragraph fallback
-        paragraphs = [p.strip() for p in text.split("\n\n") if len(p.strip()) > 60]
-        articles = [{"article_num": str(i + 1), "text": p} for i, p in enumerate(paragraphs)]
+        paragraphs = [p.strip()
+                      for p in text.split("\n\n") if len(p.strip()) > 60]
+        articles = [{"article_num": str(i + 1), "text": p}
+                    for i, p in enumerate(paragraphs)]
 
     clauses = []
     for art in articles:
@@ -207,12 +233,13 @@ def segment_arabic_text(text: str) -> List[str]:
         if boundary_matches[0].start() > 0:
             preamble = text[:boundary_matches[0].start()]
             all_clauses.extend(_extract_from_single_contract(preamble))
-            
+
         for i, bm in enumerate(boundary_matches):
-            end = boundary_matches[i + 1].start() if i + 1 < len(boundary_matches) else len(text)
+            end = boundary_matches[i + 1].start() if i + \
+                1 < len(boundary_matches) else len(text)
             sub_text = text[bm.start():end]
             all_clauses.extend(_extract_from_single_contract(sub_text))
-            
+
         return all_clauses
 
     return _extract_from_single_contract(text)
@@ -260,7 +287,6 @@ async def segment_contract_file(file: UploadFile = File(...)):
 
     - **file**: The contract file (PDF, PNG, JPG, JPEG, TIFF, BMP)
     """
-    # Validate file size
     contents = await file.read()
     if len(contents) > settings.MAX_FILE_SIZE:
         raise HTTPException(
@@ -268,7 +294,6 @@ async def segment_contract_file(file: UploadFile = File(...)):
             detail=f"File size exceeds the limit of {settings.MAX_FILE_SIZE // (1024*1024)} MB",
         )
 
-    # Validate extension
     file_ext = Path(file.filename).suffix.lower()
     if file_ext not in settings.ALLOWED_EXTENSIONS:
         raise HTTPException(
@@ -276,7 +301,6 @@ async def segment_contract_file(file: UploadFile = File(...)):
             detail=f"File type {file_ext} not allowed. Allowed: {', '.join(settings.ALLOWED_EXTENSIONS)}",
         )
 
-    # Save temporarily
     upload_dir = Path(settings.UPLOAD_DIR)
     upload_dir.mkdir(parents=True, exist_ok=True)
     file_path = upload_dir / file.filename
@@ -285,7 +309,6 @@ async def segment_contract_file(file: UploadFile = File(...)):
         with open(file_path, "wb") as buffer:
             buffer.write(contents)
 
-        # Step 1: Extract text
         extracted_text, is_scanned = extract_text_from_file(str(file_path))
 
         if not extracted_text.strip():
@@ -294,13 +317,11 @@ async def segment_contract_file(file: UploadFile = File(...)):
                 detail="No text could be extracted from the file.",
             )
 
-        # Step 2: Segment
         clauses = segment_arabic_text(extracted_text)
 
         return FileSegmentationResponse(
             filename=file.filename,
             is_scanned=is_scanned,
-            # first 500 chars as preview
             extracted_text_preview=extracted_text[:500],
             clauses=clauses,
             count=len(clauses),
