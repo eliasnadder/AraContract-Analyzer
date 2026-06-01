@@ -150,16 +150,16 @@ curl -X POST http://localhost:8000/api/contract/compare \
 
 ## Clause Types
 
-| Type                     | Arabic                 | Description               |
-|--------------------------|------------------------|---------------------------|
-| `general_provisions`     | أحكام عامة             | General provisions        |
-| `payment_financial`      | الشؤون المالية والدفع  | Payment & financial terms |
-| `party_obligations`      | التزامات الأطراف       | Party obligations         |
-| `duration_expiration`    | المدة والانتهاء         | Duration & expiration     |
-| `termination`            | الإنهاء والفسخ         | Termination               |
-| `penalties_damages`      | العقوبات والتعويضات    | Penalties & damages       |
-| `dispute_resolution`     | حل النزاعات            | Dispute resolution        |
-| `intellectual_property`  | الملكية الفكرية        | Intellectual property     |
+| Type                     | Arabic                        | Description                        |
+|--------------------------|-------------------------------|------------------------------------|
+| `general_provisions`     | أحكام عامة                    | General provisions                 |
+| `payment_financial`      | الشؤون المالية والدفع         | Payment & financial terms          |
+| `party_obligations_a`    | التزامات الطرف الأول          | Obligations of party A             |
+| `party_obligations_b`    | التزامات الطرف الثاني         | Obligations of party B             |
+| `duration_expiration`    | المدة والانتهاء                | Duration & expiration              |
+| `termination`            | الإنهاء والفسخ                | Termination                        |
+| `penalties_damages`      | العقوبات والتعويضات           | Penalties & damages                |
+| `dispute_resolution`     | حل النزاعات                   | Dispute resolution                 |
 
 ## Risk Levels
 
@@ -178,39 +178,42 @@ curl -X POST http://localhost:8000/api/contract/compare \
 
 ## Training History & Plots
 
-- **Best Avg F1:** 0.8807 (Epoch 4)
-- **Test Type F1:** 0.8699 — accuracy 87.01%
-- **Test Risk F1:** 0.8485 — accuracy 85.86%
+- **Best Avg F1:** 0.8825 (Epoch 5)
+- **Test Type F1:** 0.8882 — accuracy 88.72%
+- **Test Risk F1:** 0.8702 — accuracy 87.57%
 - **Training epochs:** 5 (see full training log in `Notes.md`)
-
-A detailed interactive report with epoch curves and per-class F1 visualizations is available in the repository: [training_results_analysis.html](training_results_analysis.html).
-
-Quick ways to view the report locally:
-
-```bash
-# Open the HTML file directly on Linux
-xdg-open training_results_analysis.html
-
-# Or serve the repo and view in a browser
-python -m http.server 8000
-# then open http://localhost:8000/training_results_analysis.html
-```
 
 The training logs and per-step metrics are saved in `Notes.md` and the notebook `AraContract_Training_Colab.ipynb` — you can re-run the notebook to reproduce training plots and regenerate the HTML report.
 
 ### Plots (generated)
 
-Epoch F1 curve (generated):
+Epoch F1 curve (Type & Risk across 5 epochs):
 
 ![Epoch F1](outputs/epoch_f1.png)
 
-Per-class F1 (generated):
+Val Type F1 — before vs after `party_obligations` split:
+
+![Epoch Before/After](outputs/epoch_before_after.png)
+
+Per-class F1 — 8-class model (test set):
 
 ![Per-class F1](outputs/class_f1.png)
 
-Class metrics table (generated):
+Per-class F1 comparison — before (7 classes) vs after (8 classes):
+
+![Class Before/After](outputs/class_before_after.png)
+
+F1 change per class after the split:
+
+![Class Delta](outputs/class_delta.png)
+
+Class metrics table (precision / recall / F1 / support):
 
 ![Class metrics table](outputs/class_table.png)
+
+Test set metrics summary:
+
+![Test Summary](outputs/test_summary.png)
 
 ## Python Usage (Direct Inference)
 

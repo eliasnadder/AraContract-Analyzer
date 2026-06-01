@@ -212,3 +212,116 @@ Clause: يحق للطرف الأول إنهاء العقد في أي وقت دو
 Clause: تبلغ مدة هذا العقد سنة واحدة قابلة للتجديد تلقائيا...
   Type: duration_expiration (83.68%)
   Risk: low (97.23%)
+
+---
+
+## Third training
+Using device: cuda
+Loading tokenizer: CAMeL-Lab/bert-base-arabic-camelbert-msa
+Building dataloaders...
+Train batches: 226, Val batches: 49
+
+Starting training for 5 epochs...
+Run name: aracontract_v2
+Batch size: 16, LR: 2e-05
+
+==================================================
+Epoch 1/5
+==================================================
+  Step 50/226 | Loss: 2.9940
+  Step 100/226 | Loss: 2.7236
+  Step 150/226 | Loss: 2.4958
+  Step 200/226 | Loss: 2.2981
+Train loss: 2.2210 | type: 1.4531 | risk: 0.7679
+Val type_f1: 0.7220 | risk_f1: 0.7885
+Val type_acc: 0.7219 | risk_acc: 0.7542
+  ★ New best model! Avg F1: 0.7553
+
+==================================================
+Epoch 2/5
+==================================================
+  Step 50/226 | Loss: 1.4119
+  Step 100/226 | Loss: 1.3211
+  Step 150/226 | Loss: 1.2694
+  Step 200/226 | Loss: 1.2264
+Train loss: 1.2054 | type: 0.7255 | risk: 0.4800
+Val type_f1: 0.8002 | risk_f1: 0.8745
+Val type_acc: 0.7969 | risk_acc: 0.8758
+  ★ New best model! Avg F1: 0.8374
+
+==================================================
+Epoch 3/5
+==================================================
+  Step 50/226 | Loss: 0.8347
+  Step 100/226 | Loss: 0.8492
+  Step 150/226 | Loss: 0.8525
+  Step 200/226 | Loss: 0.8297
+Train loss: 0.8294 | type: 0.4768 | risk: 0.3526
+Val type_f1: 0.8230 | risk_f1: 0.8834
+Val type_acc: 0.8189 | risk_acc: 0.8797
+  ★ New best model! Avg F1: 0.8532
+
+==================================================
+Epoch 4/5
+==================================================
+  Step 50/226 | Loss: 0.6083
+  Step 100/226 | Loss: 0.6281
+  Step 150/226 | Loss: 0.6368
+  Step 200/226 | Loss: 0.6154
+Train loss: 0.6219 | type: 0.3467 | risk: 0.2752
+Val type_f1: 0.8556 | risk_f1: 0.9016
+Val type_acc: 0.8525 | risk_acc: 0.8991
+  ★ New best model! Avg F1: 0.8786
+
+==================================================
+Epoch 5/5
+==================================================
+  Step 50/226 | Loss: 0.5186
+  Step 100/226 | Loss: 0.5035
+  Step 150/226 | Loss: 0.4951
+  Step 200/226 | Loss: 0.4962
+Train loss: 0.4955 | type: 0.2793 | risk: 0.2162
+Val type_f1: 0.8551 | risk_f1: 0.9059
+Val type_acc: 0.8525 | risk_acc: 0.9030
+  ★ New best model! Avg F1: 0.8805
+
+==================================================
+Training complete!
+Best weighted F1: 0.8805
+==================================================
+
+Loaded checkpoint: /content/drive/MyDrive/AraContract/checkpoints/aracontract_v2_best.pt
+Run name: aracontract_v2
+
+Evaluating on test set...
+Test type_f1: 0.8732 | risk_f1: 0.8617
+Test type_acc: 0.8711 | risk_acc: 0.8585
+✓ Meets SRS target
+
+=== Type Clause Classification Report ===
+                     precision    recall  f1-score   support
+
+ general_provisions     0.9440    0.9077    0.9255       130
+  payment_financial     0.9149    0.8515    0.8821       202
+party_obligations_a     0.6265    0.8387    0.7172        62
+party_obligations_b     0.7778    0.7568    0.7671        37
+duration_expiration     0.8672    0.8538    0.8605       130
+        termination     0.8061    0.8316    0.8187        95
+  penalties_damages     0.9280    0.8992    0.9134       129
+ dispute_resolution     0.9419    0.9643    0.9529        84
+
+           accuracy                         0.8711       869
+          macro avg     0.8508    0.8629    0.8547       869
+       weighted avg     0.8784    0.8711    0.8732       869
+
+Clause: يلتزم الطرف الثاني بدفع المبلغ المتفق عليه خلال مد...
+  Type: payment_financial (73.68%)
+  Risk: low (93.44%)
+
+Clause: يحق للطرف الأول إنهاء العقد في أي وقت دون إشعار مس...
+  Type: party_obligations_b (21.44%)
+  Risk: low (88.66%)
+
+Clause: تبلغ مدة هذا العقد سنة واحدة قابلة للتجديد تلقائيا...
+  Type: duration_expiration (70.39%)
+  Risk: low (96.00%)
