@@ -1,0 +1,179 @@
+ No checkpoint found. Starting training from scratch.
+Using device: cuda
+Loading tokenizer: CAMeL-Lab/bert-base-arabic-camelbert-msa
+/usr/local/lib/python3.12/dist-packages/huggingface_hub/file_download.py:949: FutureWarning: `resume_download` is deprecated and will be removed in version 1.0.0. Downloads always resume when possible. If you want to force a new download, use `force_download=True`.
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/huggingface_hub/utils/_auth.py:94: UserWarning: 
+The secret `HF_TOKEN` does not exist in your Colab secrets.
+To authenticate with the Hugging Face Hub, create a token in your settings tab (https://huggingface.co/settings/tokens), set it as secret in your Google Colab and restart your session.
+You will be able to reuse this secret in all of your notebooks.
+Please note that authentication is recommended but still optional to access public models or datasets.
+  warnings.warn(
+tokenizer_config.json: 100% 86.0/86.0 [00:00<00:00, 9.56kB/s]config.json: 100% 468/468 [00:00<00:00, 52.2kB/s]vocab.txt:  305k/? [00:00<00:00, 14.6MB/s]special_tokens_map.json: 100% 112/112 [00:00<00:00, 11.6kB/s]Building dataloaders...
+Train batches: 226, Val batches: 49
+Loading model: CAMeL-Lab/bert-base-arabic-camelbert-msa
+/usr/local/lib/python3.12/dist-packages/huggingface_hub/file_download.py:949: FutureWarning: `resume_download` is deprecated and will be removed in version 1.0.0. Downloads always resume when possible. If you want to force a new download, use `force_download=True`.
+  warnings.warn(
+pytorch_model.bin: 100% 439M/439M [00:03<00:00, 161MB/s]/tmp/ipykernel_8807/2777139427.py:84: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  scaler = torch.cuda.amp.GradScaler() if device.type == 'cuda' else None
+/tmp/ipykernel_8807/478808586.py:105: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with torch.cuda.amp.autocast():
+
+Starting training for 5 epochs...
+Run name: aracontract_v2.3
+Batch size: 16, LR: 2e-05
+
+==================================================
+Epoch 1/5
+==================================================
+  Step 50/226 | Loss: 3.1426
+  Step 100/226 | Loss: 2.7916
+  Step 150/226 | Loss: 2.5295
+  Step 200/226 | Loss: 2.3109
+Train loss: 2.2178 | type: 1.3684 | risk: 0.6441
+Val type_f1: 0.7424 | risk_f1: 0.8302
+Val type_macro_f1: 0.6774 | risk_macro_f1: 0.5825
+Val risk recalls: low=0.9377 medium=0.0714 high=0.7124
+Val type_acc: 0.7451 | risk_acc: 0.8461
+Val selection_score: 0.5868 | type_macro=0.6774 | risk_macro_thresholded=0.5933 | medium_f1_thresholded=0.1493 | high_recall_thresholded=0.7124
+Val risk thresholds: medium=0.35, high=0.45
+  Checkpoint saved to /content/drive/MyDrive/AraContract/checkpoints/aracontract_v2.3_best.pt
+  ★ New best model! Selection score: 0.5868
+  Checkpoint saved to /content/drive/MyDrive/AraContract/checkpoints/aracontract_v2.3_epoch1.pt
+
+==================================================
+Epoch 2/5
+==================================================
+/tmp/ipykernel_8807/478808586.py:105: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with torch.cuda.amp.autocast():
+  Step 50/226 | Loss: 1.3440
+  Step 100/226 | Loss: 1.2609
+  Step 150/226 | Loss: 1.2271
+  Step 200/226 | Loss: 1.1744
+Train loss: 1.1547 | type: 0.6465 | risk: 0.4112
+Val type_f1: 0.8079 | risk_f1: 0.8668
+Val type_macro_f1: 0.7760 | risk_macro_f1: 0.7176
+Val risk recalls: low=0.9256 medium=0.4048 high=0.7843
+Val type_acc: 0.8060 | risk_acc: 0.8693
+Val selection_score: 0.7272 | type_macro=0.7760 | risk_macro_thresholded=0.7288 | medium_f1_thresholded=0.5000 | high_recall_thresholded=0.7712
+Val risk thresholds: medium=0.37, high=0.49
+  Checkpoint saved to /content/drive/MyDrive/AraContract/checkpoints/aracontract_v2.3_best.pt
+  ★ New best model! Selection score: 0.7272
+  Checkpoint saved to /content/drive/MyDrive/AraContract/checkpoints/aracontract_v2.3_epoch2.pt
+
+==================================================
+Epoch 3/5
+==================================================
+/tmp/ipykernel_8807/478808586.py:105: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with torch.cuda.amp.autocast():
+  Step 50/226 | Loss: 0.8386
+  Step 100/226 | Loss: 0.8019
+  Step 150/226 | Loss: 0.7831
+  Step 200/226 | Loss: 0.7693
+Train loss: 0.7640 | type: 0.4012 | risk: 0.3027
+Val type_f1: 0.8345 | risk_f1: 0.8824
+Val type_macro_f1: 0.8064 | risk_macro_f1: 0.7610
+Val risk recalls: low=0.9170 medium=0.6190 high=0.8105
+Val type_acc: 0.8292 | risk_acc: 0.8797
+Val selection_score: 0.7630 | type_macro=0.8064 | risk_macro_thresholded=0.7635 | medium_f1_thresholded=0.5652 | high_recall_thresholded=0.8235
+Val risk thresholds: medium=0.49, high=0.45
+  Checkpoint saved to /content/drive/MyDrive/AraContract/checkpoints/aracontract_v2.3_best.pt
+  ★ New best model! Selection score: 0.7630
+  Checkpoint saved to /content/drive/MyDrive/AraContract/checkpoints/aracontract_v2.3_epoch3.pt
+
+==================================================
+Epoch 4/5
+==================================================
+/tmp/ipykernel_8807/478808586.py:105: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with torch.cuda.amp.autocast():
+  Step 50/226 | Loss: 0.6013
+  Step 100/226 | Loss: 0.5888
+  Step 150/226 | Loss: 0.5736
+  Step 200/226 | Loss: 0.5719
+Train loss: 0.5725 | type: 0.2797 | risk: 0.2508
+Val type_f1: 0.8494 | risk_f1: 0.8999
+Val type_macro_f1: 0.8300 | risk_macro_f1: 0.7951
+Val risk recalls: low=0.9498 medium=0.5714 high=0.8105
+Val type_acc: 0.8461 | risk_acc: 0.9017
+Val selection_score: 0.7978 | type_macro=0.8300 | risk_macro_thresholded=0.8003 | medium_f1_thresholded=0.6420 | high_recall_thresholded=0.8039
+Val risk thresholds: medium=0.43, high=0.47
+  Checkpoint saved to /content/drive/MyDrive/AraContract/checkpoints/aracontract_v2.3_best.pt
+  ★ New best model! Selection score: 0.7978
+  Checkpoint saved to /content/drive/MyDrive/AraContract/checkpoints/aracontract_v2.3_epoch4.pt
+
+==================================================
+Epoch 5/5
+==================================================
+/tmp/ipykernel_8807/478808586.py:105: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with torch.cuda.amp.autocast():
+  Step 50/226 | Loss: 0.4217
+  Step 100/226 | Loss: 0.4686
+  Step 150/226 | Loss: 0.4499
+  Step 200/226 | Loss: 0.4580
+Train loss: 0.4558 | type: 0.2097 | risk: 0.2146
+Val type_f1: 0.8509 | risk_f1: 0.9065
+Val type_macro_f1: 0.8295 | risk_macro_f1: 0.8127
+Val risk recalls: low=0.9446 medium=0.6429 high=0.8366
+Val type_acc: 0.8499 | risk_acc: 0.9069
+Val selection_score: 0.8081 | type_macro=0.8295 | risk_macro_thresholded=0.8182 | medium_f1_thresholded=0.6667 | high_recall_thresholded=0.8497
+Val risk thresholds: medium=0.51, high=0.45
+  Checkpoint saved to /content/drive/MyDrive/AraContract/checkpoints/aracontract_v2.3_best.pt
+  ★ New best model! Selection score: 0.8081
+  Checkpoint saved to /content/drive/MyDrive/AraContract/checkpoints/aracontract_v2.3_epoch5.pt
+  Checkpoint saved to /content/drive/MyDrive/AraContract/checkpoints/aracontract_v2.3_final.pt
+
+==================================================
+Training complete!
+Best selection score: 0.8081
+Checkpoints saved to: /content/drive/MyDrive/AraContract/checkpoints
+==================================================
+
+
+Loaded checkpoint: /content/drive/MyDrive/AraContract/checkpoints/aracontract_v2.3_best.pt
+Run name: aracontract_v2.3
+Risk thresholds: medium=0.51, high=0.45
+/usr/local/lib/python3.12/dist-packages/huggingface_hub/file_download.py:949: FutureWarning: `resume_download` is deprecated and will be removed in version 1.0.0. Downloads always resume when possible. If you want to force a new download, use `force_download=True`.
+  warnings.warn(
+✓ Model loaded
+
+Evaluating on test set...
+Test type_f1: 0.8920 | risk_f1: 0.8762
+Test type_acc: 0.8918 | risk_acc: 0.8780
+✓ Meets SRS target
+
+
+Loaded checkpoint for evaluation: /content/drive/MyDrive/AraContract/checkpoints/aracontract_v2.3_best.pt
+/usr/local/lib/python3.12/dist-packages/huggingface_hub/file_download.py:949: FutureWarning: `resume_download` is deprecated and will be removed in version 1.0.0. Downloads always resume when possible. If you want to force a new download, use `force_download=True`.
+  warnings.warn(
+Applied validation thresholds: medium=0.51, high=0.45, Risk Macro F1=0.7564
+=======================================================
+TASK 1 — Clause Type Classification
+=======================================================
+                     precision    recall  f1-score   support
+
+ general_provisions     0.9385    0.9385    0.9385       130
+  payment_financial     0.8922    0.9010    0.8966       202
+party_obligations_a     0.7015    0.7581    0.7287        62
+party_obligations_b     0.8857    0.8378    0.8611        37
+duration_expiration     0.8467    0.8923    0.8689       130
+        termination     0.8929    0.7895    0.8380        95
+  penalties_damages     0.9528    0.9380    0.9453       129
+ dispute_resolution     0.9529    0.9643    0.9586        84
+
+           accuracy                         0.8918       869
+          macro avg     0.8829    0.8774    0.8795       869
+       weighted avg     0.8934    0.8918    0.8920       869
+
+=======================================================
+TASK 2 — Risk Level Classification (threshold-adjusted)
+=======================================================
+              precision    recall  f1-score   support
+
+         low     0.9349    0.9076    0.9211       617
+      medium     0.5745    0.4500    0.5047        60
+        high     0.7848    0.9115    0.8434       192
+
+    accuracy                         0.8769       869
+   macro avg     0.7647    0.7564    0.7564       869
+weighted avg     0.8768    0.8769    0.8751       869
+
