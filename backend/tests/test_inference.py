@@ -18,3 +18,25 @@ def test_inference_fallback():
     # Check that warning is populated for high risk
     if result["predicted_risk_level"] == "high":
         assert len(result["warning"]) > 0
+
+
+def test_legal_override_flags_full_party_b_responsibility_as_high():
+    inference = AraContractInference("./non_existent_checkpoint.pt")
+    text = "يتحمل الفريق الثاني كامل المسؤولية المدنية والجزائية عن الحوادث التي تقع معه أياً كان سببها ومسببها."
+
+    result = inference.predict_single(text)
+
+    assert result["predicted_type_clause"] == "party_obligations_b"
+    assert result["predicted_risk_level"] == "high"
+    assert "تحذير التزامات الطرف الثاني" in result["warning"]
+
+
+def test_legal_override_flags_automatic_termination_as_high():
+    inference = AraContractInference("./non_existent_checkpoint.pt")
+    text = "يعتبر الفريق الثاني معذراً بمجرد حلول أجل الالتزامات دون الحاجة لإعذار أو الحصول على حكم قضائي ويجوز للفريق الأول اعتبار العقد مفسوخاً من تلقاء نفسه."
+
+    result = inference.predict_single(text)
+
+    assert result["predicted_type_clause"] == "party_obligations_b"
+    assert result["predicted_risk_level"] == "high"
+    assert "تحذير التزامات الطرف الثاني" in result["warning"]
