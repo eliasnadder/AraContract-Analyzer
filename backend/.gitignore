@@ -52,4 +52,7 @@ htmlcov/
 *.bak
 tmp/
 
+models_local/
+tests/Contract-test.pdf
+
 firebase-service-account.json

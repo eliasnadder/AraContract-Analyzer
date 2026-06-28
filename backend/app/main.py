@@ -14,6 +14,7 @@ from contextlib import asynccontextmanager
 from app.core.config import settings
 from app.core.exceptions import setup_exception_handlers
 from app.routers import upload, segment, classify, summarize, compare, analyze
+from app.routers.rag import router as rag_router
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -66,6 +67,7 @@ app.include_router(classify.router, prefix="/api/contract", tags=["classificatio
 app.include_router(summarize.router, prefix="/api/contract", tags=["summarization"])
 app.include_router(analyze.router, prefix="/api/contract", tags=["analysis"])
 app.include_router(compare.router, prefix="/api/contract", tags=["comparison"])
+app.include_router(rag_router, prefix="/api/contract", tags=["RAG"])
 
 # Root endpoint
 @app.get("/")
