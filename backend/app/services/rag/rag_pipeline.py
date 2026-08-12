@@ -11,7 +11,7 @@ Workflow:
 from typing import List, Dict, Any, Optional
 import uuid
 import logging
-
+from app.services.rag.clause_grouper import group_by_header
 from app.services.rag.embedder import get_embedder
 from app.services.rag.rag_store import get_rag_store
 from app.services.rag.retrieval import get_retriever
@@ -50,9 +50,15 @@ class RAGPipeline:
         session_id = session_id or str(uuid.uuid4())
         logger.info(f"بدء الـ Ingestion — session: {session_id}")
 
+        # Step 0: تجميع الـ subclauses المجزّأة لنفس المادة (جديد)
+        grouped_clauses = group_by_header(clauses)
+        logger.info(
+            f"Step 0 — Grouping: {len(clauses)} بند → {len(grouped_clauses)} مادة مُجمّعة"
+        )
+
         # Step 1: Prepare chunks
-        chunks = self._embedder.prepare_chunks(clauses)
-        logger.info(f"Step 1 — Chunks: {len(clauses)} بند → {len(chunks)} chunk")
+        chunks = self._embedder.prepare_chunks(grouped_clauses)
+        logger.info(f"Step 1 — Chunks: {len(grouped_clauses)} مادة → {len(chunks)} chunk")
 
         # Step 2: Generate embeddings
         texts = [chunk["text"] for chunk in chunks]

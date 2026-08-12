@@ -45,26 +45,6 @@ class Embedder:
             logger.info("تم تحميل النموذج بنجاح")
 
     def prepare_chunks(self, clauses: List[str]) -> List[Dict[str, Any]]:
-        """
-        يحوّل قائمة البنود إلى chunks جاهزة للـ embedding والتخزين في Qdrant.
-
-        Hybrid Strategy:
-        - بند قصير (<= 450 حرف): chunk واحد = البند كاملاً
-        - بند طويل (> 450 حرف): recursive chunking مع حفظ parent_text
-
-        Args:
-            clauses: List[str] من segment_arabic_text()
-
-        Returns:
-            List of dicts:
-            {
-                "text": نص الـ chunk للـ embedding,
-                "parent_text": النص الكامل للبند للـ LLM,
-                "clause_index": رقم البند الأصلي,
-                "chunk_index": رقم الـ chunk داخل البند,
-                "is_chunked": هل تم تقطيع البند
-            }
-        """
         all_chunks = []
 
         for clause_idx, clause in enumerate(clauses):
@@ -73,7 +53,6 @@ class Embedder:
                 continue
 
             if len(clause) <= MAX_CHARS:
-                # بند قصير — chunk واحد مباشرة
                 all_chunks.append({
                     "text": clause,
                     "parent_text": clause,
@@ -82,22 +61,31 @@ class Embedder:
                     "is_chunked": False
                 })
             else:
-                # بند طويل — recursive chunking
                 sub_chunks = self._splitter.split_text(clause)
+                # احذف الـ chunks المكررة أو الفارغة
+                seen_chunks = set()
+                clean_chunks = []
+                for c in sub_chunks:
+                    c = c.strip()
+                    if c and c not in seen_chunks:
+                        seen_chunks.add(c)
+                        clean_chunks.append(c)
+
                 logger.info(
-                    f"البند {clause_idx} ({len(clause)} حرف) → {len(sub_chunks)} chunks"
+                    f"البند {clause_idx} ({len(clause)} حرف) "
+                    f"→ {len(clean_chunks)} chunks فريدة"
                 )
-                for chunk_idx, chunk_text in enumerate(sub_chunks):
+                for chunk_idx, chunk_text in enumerate(clean_chunks):
                     all_chunks.append({
                         "text": chunk_text,
-                        "parent_text": clause,  # النص الكامل للـ LLM
+                        "parent_text": clause,
                         "clause_index": clause_idx,
                         "chunk_index": chunk_idx,
                         "is_chunked": True
                     })
 
         logger.info(
-            f"إجمالي: {len(clauses)} بند → {len(all_chunks)} chunk جاهز للتخزين"
+            f"إجمالي: {len(clauses)} بند → {len(all_chunks)} chunk"
         )
         return all_chunks
 

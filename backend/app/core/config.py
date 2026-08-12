@@ -54,8 +54,8 @@ class Settings(BaseSettings):
     )
 
     # ── RAG — Retrieval ────────────────────────────────────────────────────
-    RETRIEVAL_SCORE_THRESHOLD: float = 0.15
-    RETRIEVAL_INITIAL_TOP_K: int = 10
+    RETRIEVAL_SCORE_THRESHOLD: float = 0.45
+    RETRIEVAL_INITIAL_TOP_K: int = 15
     RETRIEVAL_FINAL_TOP_K: int = 3
 
     # ── RAG — LLM ──────────────────────────────────────────────────────────

@@ -66,6 +66,45 @@ def test_full_pipeline():
     print("✅ اكتمل الاختبار بنجاح")
     print("="*60)
 
+def test_raw_search_debug():
+    print("\n" + "="*60)
+    print("تشخيص: فحص نتائج similarity_search الخام (top 10)")
+    print("="*60)
+
+    extracted_text, is_scanned = extract_text_from_file(CONTRACT_PATH)
+    clauses = segment_arabic_text(extracted_text)
+
+    pipeline = get_rag_pipeline()
+    session_id = pipeline.ingest(clauses)
+    collection_name = f"contract_{session_id}"
+
+    from app.services.rag.embedder import get_embedder
+    embedder = get_embedder()
+
+    questions = [
+        "من يتحمل مسؤولية الحوادث؟",
+        "ما هي شروط إنهاء العقد؟",
+        "كيف تُقسم الأرباح؟",
+    ]
+
+    for question in questions:
+        print(f"\n--- السؤال: {question} ---")
+        query_vector = embedder.embed_query(question)
+
+        raw_results = pipeline._retriever._service.similarity_search(
+            collection_name, query_vector
+        )
+
+        for i, r in enumerate(raw_results, 1):
+            preview = r["text"].replace("\n", " ")
+            print(
+                f"  [{i}] score={r['score']:.4f} | "
+                f"clause_index={r['clause_index']} | {preview}..."
+            )
+
+    pipeline.cleanup(session_id)
+
 
 if __name__ == "__main__":
     test_full_pipeline()
+    test_raw_search_debug()
