@@ -1,0 +1,165 @@
+
+<h2 class="sr-only">نتائج تدريب نموذج AraContract — منحنيات الأداء وتفصيل الأصناف</h2>
+
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;">
+  <div style="background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:14px 10px;text-align:center;">
+    <div style="font-size:12px;color:var(--color-text-secondary);margin-bottom:6px;">Best Avg F1</div>
+    <div style="font-size:22px;font-weight:500;color:var(--color-text-success);">0.8807</div>
+    <div style="font-size:11px;color:var(--color-text-secondary);">Epoch 4</div>
+  </div>
+  <div style="background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:14px 10px;text-align:center;">
+    <div style="font-size:12px;color:var(--color-text-secondary);margin-bottom:6px;">Test Type F1</div>
+    <div style="font-size:22px;font-weight:500;color:var(--color-text-primary);">0.8699</div>
+    <div style="font-size:11px;color:var(--color-text-secondary);">acc 87.01%</div>
+  </div>
+  <div style="background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:14px 10px;text-align:center;">
+    <div style="font-size:12px;color:var(--color-text-secondary);margin-bottom:6px;">Test Risk F1</div>
+    <div style="font-size:22px;font-weight:500;color:var(--color-text-primary);">0.8485</div>
+    <div style="font-size:11px;color:var(--color-text-secondary);">acc 85.86%</div>
+  </div>
+  <div style="background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:14px 10px;text-align:center;">
+    <div style="font-size:12px;color:var(--color-text-secondary);margin-bottom:6px;">SRS Target</div>
+    <div style="font-size:22px;font-weight:500;color:var(--color-text-success);">✓ مُحقَّق</div>
+    <div style="font-size:11px;color:var(--color-text-secondary);">F1 ≥ 0.80</div>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;">
+  <div>
+    <div style="font-size:12px;color:var(--color-text-secondary);margin-bottom:8px;">منحنى الأداء عبر الـ epochs</div>
+    <div style="position:relative;width:100%;height:200px;">
+      <canvas id="epochChart" role="img" aria-label="منحنى F1 لـ type و risk عبر 5 epochs">Type F1: 0.75, 0.87, 0.87, 0.90, 0.91. Risk F1: 0.73, 0.82, 0.84, 0.86, 0.85.</canvas>
+    </div>
+  </div>
+  <div>
+    <div style="font-size:12px;color:var(--color-text-secondary);margin-bottom:8px;">F1 لكل صنف في الـ test set</div>
+    <div style="position:relative;width:100%;height:200px;">
+      <canvas id="classChart" role="img" aria-label="F1 score لكل صنف من أصناف العقد السبعة">termination هو الأضعف بـ 0.70</canvas>
+    </div>
+  </div>
+</div>
+
+<div style="font-size:12px;color:var(--color-text-secondary);margin-bottom:8px;">تفصيل أداء كل صنف — precision / recall / F1</div>
+<div id="classTable" style="display:flex;flex-direction:column;gap:4px;"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const epochData = {
+  labels: ['Epoch 1','Epoch 2','Epoch 3','Epoch 4','Epoch 5'],
+  type_f1:  [0.7535, 0.8708, 0.8668, 0.9016, 0.9064],
+  risk_f1:  [0.7535, 0.8184, 0.8438, 0.8599, 0.8519],
+};
+
+new Chart(document.getElementById('epochChart'), {
+  type: 'line',
+  data: {
+    labels: epochData.labels,
+    datasets: [
+      {
+        label: 'Type F1',
+        data: epochData.type_f1,
+        borderColor: '#534AB7',
+        backgroundColor: 'rgba(83,74,183,0.08)',
+        borderWidth: 2,
+        pointRadius: 4,
+        fill: true,
+        tension: 0.3,
+      },
+      {
+        label: 'Risk F1',
+        data: epochData.risk_f1,
+        borderColor: '#1D9E75',
+        backgroundColor: 'rgba(29,158,117,0.06)',
+        borderWidth: 2,
+        pointRadius: 4,
+        fill: true,
+        tension: 0.3,
+        borderDash: [5,3],
+      },
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      annotation: {}
+    },
+    scales: {
+      y: {
+        min: 0.68, max: 0.94,
+        ticks: { callback: v => v.toFixed(2), font: { size: 10 } },
+        grid: { color: 'rgba(128,128,128,0.1)' }
+      },
+      x: { ticks: { font: { size: 10 } }, grid: { display: false } }
+    }
+  }
+});
+
+const classes = [
+  { name: 'general_provisions', p: 0.9638, r: 0.9568, f1: 0.9603, n: 139 },
+  { name: 'payment_financial',  p: 0.8795, r: 0.8639, f1: 0.8716, n: 169 },
+  { name: 'party_obligations',  p: 0.7904, r: 0.9471, f1: 0.8617, n: 227 },
+  { name: 'duration_expiration',p: 0.8516, r: 0.8583, f1: 0.8549, n: 127 },
+  { name: 'termination',        p: 0.7429, r: 0.6667, f1: 0.7027, n: 78  },
+  { name: 'penalties_damages',  p: 0.9652, r: 0.8043, f1: 0.8775, n: 138 },
+  { name: 'dispute_resolution', p: 0.9726, r: 0.8452, f1: 0.9045, n: 84  },
+];
+
+new Chart(document.getElementById('classChart'), {
+  type: 'bar',
+  data: {
+    labels: classes.map(c => c.name.replace('_',' ').split(' ')[0]),
+    datasets: [{
+      label: 'F1',
+      data: classes.map(c => c.f1),
+      backgroundColor: classes.map(c => c.f1 < 0.80 ? '#E24B4A' : c.f1 >= 0.90 ? '#1D9E75' : '#378ADD'),
+      borderRadius: 4,
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      y: {
+        min: 0.60, max: 1.0,
+        ticks: { callback: v => v.toFixed(2), font: { size: 10 } },
+        grid: { color: 'rgba(128,128,128,0.1)' }
+      },
+      x: { ticks: { font: { size: 9 } }, grid: { display: false } }
+    }
+  }
+});
+
+const tbl = document.getElementById('classTable');
+const hdr = document.createElement('div');
+hdr.style.cssText = 'display:grid;grid-template-columns:160px 1fr 60px 60px 60px 50px;gap:8px;font-size:11px;color:var(--color-text-secondary);padding:0 4px 4px;border-bottom:0.5px solid var(--color-border-tertiary);';
+hdr.innerHTML = '<span>صنف</span><span>F1 bar</span><span style="text-align:right">prec</span><span style="text-align:right">recall</span><span style="text-align:right">F1</span><span style="text-align:right">n</span>';
+tbl.appendChild(hdr);
+
+classes.forEach(c => {
+  const isWeak = c.f1 < 0.80;
+  const row = document.createElement('div');
+  row.style.cssText = `display:grid;grid-template-columns:160px 1fr 60px 60px 60px 50px;gap:8px;align-items:center;font-size:12px;padding:5px 4px;border-radius:6px;background:${isWeak ? 'rgba(226,75,74,0.06)' : 'transparent'};`;
+  const barColor = c.f1 < 0.80 ? '#E24B4A' : c.f1 >= 0.90 ? '#1D9E75' : '#378ADD';
+  const barW = Math.round(c.f1 * 100);
+  row.innerHTML = `
+    <span style="font-size:11px;color:${isWeak ? 'var(--color-text-danger)' : 'var(--color-text-primary)'};font-weight:${isWeak?'500':'400'}">${c.name}</span>
+    <div style="background:var(--color-border-tertiary);border-radius:3px;height:8px;overflow:hidden;">
+      <div style="width:${barW}%;height:100%;background:${barColor};border-radius:3px;"></div>
+    </div>
+    <span style="text-align:right;color:var(--color-text-secondary)">${c.p.toFixed(3)}</span>
+    <span style="text-align:right;color:var(--color-text-secondary)">${c.r.toFixed(3)}</span>
+    <span style="text-align:right;font-weight:500;color:${isWeak ? 'var(--color-text-danger)' : 'var(--color-text-primary)'}">${c.f1.toFixed(3)}</span>
+    <span style="text-align:right;color:var(--color-text-secondary)">${c.n}</span>
+  `;
+  tbl.appendChild(row);
+});
+
+const legDiv = document.querySelector('#epochChart').parentElement.parentElement.querySelector('div:first-child');
+const leg = document.createElement('div');
+leg.style.cssText = 'display:flex;gap:14px;font-size:11px;color:var(--color-text-secondary);margin-top:6px;';
+leg.innerHTML = '<span style="display:flex;align-items:center;gap:4px;"><span style="width:16px;height:2px;background:#534AB7;display:inline-block;"></span>Type F1</span><span style="display:flex;align-items:center;gap:4px;"><span style="width:16px;height:2px;background:#1D9E75;display:inline-block;border-top:2px dashed #1D9E75;height:0;"></span>Risk F1</span>';
+document.getElementById('epochChart').parentElement.after(leg);
+</script>
