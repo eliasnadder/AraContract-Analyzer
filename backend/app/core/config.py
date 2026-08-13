@@ -59,12 +59,14 @@ class Settings(BaseSettings):
     RETRIEVAL_FINAL_TOP_K: int = 3
 
     # ── RAG — LLM ──────────────────────────────────────────────────────────
-    LLM_PROVIDER: str = "groq"           # groq | qwen
+    LLM_PROVIDER: str = "groq"           # groq | qwen | ollama
     GROQ_API_KEY: str = ""
     GROQ_MODEL: str = "llama-3.1-8b-instant"
     LLM_MODEL_PATH: str = str(
         BASE_DIR / "models_local" / "Qwen2.5-7B-Instruct"
     )
+    OLLAMA_BASE_URL: str = "http://127.0.0.1:11434"
+    OLLAMA_MODEL: str = "qwen2.5:7b"
 
     # ── RAG — Qdrant ───────────────────────────────────────────────────────
     QDRANT_MODE: str = "memory"          # memory | url

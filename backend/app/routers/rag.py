@@ -12,6 +12,7 @@ from fastapi import APIRouter, HTTPException, status
 import logging
 
 from app.services.rag.rag_pipeline import get_rag_pipeline
+from app.services.rag.llm.factory import get_llm_status
 from app.schemas.rag_schemas import *
 
 logger = logging.getLogger(__name__)
@@ -149,3 +150,23 @@ async def delete_session(session_id: str):
 )
 async def rag_health():
     return {"status": "ok", "service": "RAG Pipeline"}
+
+
+@router.get(
+    "/status",
+    response_model=RAGStatusResponse,
+    status_code=status.HTTP_200_OK,
+    summary="حالة مزود الـ LLM",
+    description="يتحقق من مزود الـ LLM الحالي (Groq / Qwen local / Ollama)"
+)
+async def rag_status():
+    llm_status = get_llm_status()
+    return RAGStatusResponse(
+        status="ok",
+        service="RAG Pipeline",
+        provider=llm_status["provider"],
+        ready=llm_status["ready"],
+        model=llm_status.get("model"),
+        base_url=llm_status.get("base_url"),
+        details=llm_status.get("details"),
+    )

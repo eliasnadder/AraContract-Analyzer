@@ -67,3 +67,13 @@ class DeleteSessionResponse(BaseModel):
     session_id: str
     deleted: bool
     message: str
+
+
+class RAGStatusResponse(BaseModel):
+    status: str
+    service: str
+    provider: str
+    ready: bool
+    model: Optional[str] = None
+    base_url: Optional[str] = None
+    details: Optional[str] = None
