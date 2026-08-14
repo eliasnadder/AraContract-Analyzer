@@ -3,9 +3,10 @@ Summarization router for contracts.
 Generates executive summaries using an LLM.
 """
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from app.models.schemas import SummarizationRequest, SummarizationResponse, ErrorResponse
 from app.services.summary_service import generate_contract_summary
+from app.core.auth import get_current_user
 
 router = APIRouter()
 
@@ -15,7 +16,10 @@ router = APIRouter()
     response_model=SummarizationResponse,
     responses={400: {"model": ErrorResponse}, 500: {"model": ErrorResponse}, 503: {"model": ErrorResponse}},
 )
-async def summarize_contract(request: SummarizationRequest):
+async def summarize_contract(
+    request: SummarizationRequest,
+    uid: str = Depends(get_current_user)
+):
     """
     Generate an executive summary of the contract.
 

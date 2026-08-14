@@ -4,7 +4,7 @@ Uses article-based extraction logic ported from the dataset pipeline (step4.py).
 Handles المادة N patterns, Arabic numerals, multi-contract files, and paragraph fallback.
 """
 
-from fastapi import APIRouter, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from app.models.schemas import (
     SegmentationRequest,
     SegmentationResponse,
@@ -18,6 +18,7 @@ from typing import List
 
 from app.services.extraction_service import extract_text_from_file
 from app.core.config import settings
+from app.core.auth import get_current_user
 from pathlib import Path
 import logging
 
@@ -333,7 +334,10 @@ def segment_arabic_text(text: str) -> List[str]:
     response_model=SegmentationResponse,
     responses={400: {"model": ErrorResponse}, 500: {"model": ErrorResponse}},
 )
-async def segment_contract(request: SegmentationRequest):
+async def segment_contract(
+    request: SegmentationRequest,
+    uid: str = Depends(get_current_user)
+):
     """
     Segment contract text into clauses.
 
@@ -362,7 +366,10 @@ async def segment_contract(request: SegmentationRequest):
         500: {"model": ErrorResponse}
     },
 )
-async def segment_contract_file(file: UploadFile = File(...)):
+async def segment_contract_file(
+    file: UploadFile = File(...),
+    uid: str = Depends(get_current_user)
+):
     """
     Upload a contract file (PDF or image), extract text, then segment into clauses.
 

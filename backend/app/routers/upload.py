@@ -3,7 +3,7 @@ Upload router for contract files.
 Handles PDF and image uploads, text extraction, and preprocessing.
 """
 
-from fastapi import APIRouter, File, UploadFile, HTTPException, status
+from fastapi import APIRouter, Depends, File, UploadFile, HTTPException, status
 from fastapi.responses import JSONResponse
 import os
 import shutil
@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 from app.services.extraction_service import extract_text_from_file
 from app.models.schemas import UploadResponse, ErrorResponse
 from app.core.config import settings
+from app.core.auth import get_current_user
 
 router = APIRouter()
 
@@ -25,7 +26,10 @@ router = APIRouter()
     response_model=UploadResponse,
     responses={400: {"model": ErrorResponse}, 413: {"model": ErrorResponse}, 500: {"model": ErrorResponse}},
 )
-async def upload_contract(file: UploadFile = File(...)):
+async def upload_contract(
+    file: UploadFile = File(...),
+    uid: str = Depends(get_current_user)
+):
     """
     Upload a contract file (PDF or image) and extract text.
 

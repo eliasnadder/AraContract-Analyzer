@@ -13,6 +13,7 @@ from contextlib import asynccontextmanager
 
 from app.core.config import settings
 from app.core.exceptions import setup_exception_handlers
+from app.core.firebase import initialize_firebase
 from app.routers import upload, segment, classify, summarize, compare, analyze
 from app.routers.rag import router as rag_router
 
@@ -28,6 +29,9 @@ async def lifespan(app: FastAPI):
     Handles startup and shutdown events.
     """
     logger.info("Starting AraContract Analyzer API...")
+
+    # Initialize Firebase Admin SDK
+    initialize_firebase(settings.FIREBASE_SERVICE_ACCOUNT_PATH)
 
     # Initialize resources here if needed
     # e.g., load models, connect to databases, etc.

@@ -3,7 +3,7 @@ Classification router for contract clauses.
 Loads the trained model and provides type and risk level predictions.
 """
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List, Union
 import torch
 import numpy as np
@@ -18,6 +18,7 @@ from app.models.schemas import (
 )
 from app.models.inference import AraContractInference
 from app.core.config import settings
+from app.core.auth import get_current_user
 
 router = APIRouter()
 
@@ -44,7 +45,10 @@ def get_model() -> AraContractInference:
     response_model=ClassificationResponse,
     responses={400: {"model": ErrorResponse}, 500: {"model": ErrorResponse}, 503: {"model": ErrorResponse}},
 )
-async def classify_clause(request: ClassificationRequest):
+async def classify_clause(
+    request: ClassificationRequest,
+    uid: str = Depends(get_current_user)
+):
     """
     Classify a single contract clause for type and risk level.
 
@@ -66,7 +70,10 @@ async def classify_clause(request: ClassificationRequest):
     response_model=BatchClassificationResponse,
     responses={400: {"model": ErrorResponse}, 500: {"model": ErrorResponse}, 503: {"model": ErrorResponse}},
 )
-async def classify_clauses_batch(request: BatchClassificationRequest):
+async def classify_clauses_batch(
+    request: BatchClassificationRequest,
+    uid: str = Depends(get_current_user)
+):
     """
     Classify multiple contract clauses for type and risk level.
 

@@ -16,7 +16,7 @@ from app.routers.segment import segment_arabic_text
 from app.routers.classify import get_model
 from app.services.summary_service import generate_contract_summary
 from app.models.labels import TYPE_DISPLAY_NAMES_AR, RISK_DISPLAY_NAMES_AR
-# from backend.app.core.auth import get_current_user
+from app.core.auth import get_current_user
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -28,11 +28,10 @@ router = APIRouter()
     responses={400: {"model": ErrorResponse}, 413: {"model": ErrorResponse}, 500: {
         "model": ErrorResponse}, 503: {"model": ErrorResponse}},
 )
-# async def analyze_contract(
-#     file: UploadFile = File(...),
-#     uid: str = Depends(get_current_user)
-# ):
-async def analyze_contract(file: UploadFile = File(...)):
+async def analyze_contract(
+    file: UploadFile = File(...),
+    uid: str = Depends(get_current_user)
+):
     """
     Accepts a contract file, runs extraction -> segmentation -> classification -> warnings -> summary,
     and returns a unified analysis response.

@@ -3,7 +3,7 @@ Contract comparison router (optional/bonus feature).
 Compares two contracts for differences in clauses, types, and risk levels.
 """
 
-from fastapi import APIRouter, File, UploadFile, HTTPException, status
+from fastapi import APIRouter, Depends, File, UploadFile, HTTPException, status
 from fastapi.responses import JSONResponse
 import os
 import shutil
@@ -13,6 +13,7 @@ from typing import List
 from app.services.comparison_service import compare_contracts
 from app.models.schemas import ComparisonResponse, ErrorResponse
 from app.core.config import settings
+from app.core.auth import get_current_user
 
 router = APIRouter()
 
@@ -25,7 +26,8 @@ router = APIRouter()
 )
 async def compare_contract_endpoint(
     file1: UploadFile = File(...),
-    file2: UploadFile = File(...)
+    file2: UploadFile = File(...),
+    uid: str = Depends(get_current_user)
 ):
     """
     Compare two contract files for differences in clauses, types, and risk levels.
