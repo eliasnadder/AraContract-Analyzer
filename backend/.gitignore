@@ -56,3 +56,5 @@ models_local/
 tests/Contract-test.pdf
 
 firebase-service-account.json
+
+*.pdf
