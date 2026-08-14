@@ -115,7 +115,7 @@ class AraContractInference:
 
                 self.model = AraContractClassifier(
                     num_type_classes=len(self.labels))
-                self.model.load_state_dict(state_dict)
+                self.model.load_state_dict(state_dict, strict=False)
                 self.model.to(self.device)
                 self.model.eval()
                 self.is_fallback = False
