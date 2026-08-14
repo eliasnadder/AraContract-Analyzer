@@ -87,6 +87,23 @@ _ORDINAL_PATTERN = re.compile(
     re.UNICODE | re.MULTILINE,
 )
 
+# نمط "البند" — يدعم العقود التي تستخدم "البند الأول / الثاني / الثالث ..."
+# مثل: عقود البيع العقاري، عقود السيارات، نماذج العقود المصرية/العربية
+# يدعم أيضاً: البند 1 / البند ١ (أرقام غربية وعربية-هندية)
+_BAND_PATTERN = re.compile(
+    r'(?:^|\n)\s*'
+    r'(?:'
+    r'(?:البنــ+د|البند)\s+'                                  # البند (مع/بدون تمديد حرف)
+    r'(?:'
+    r'الأول|الثاني|الثالث|الرابع|الخامس|السادس|السابع|الثامن|التاسع|العاشر'
+    r'|الحادي\s+عشر|الثاني\s+عشر|الثالث\s+عشر|الرابع\s+عشر|الخامس\s+عشر'
+    r'|[\d١٢٣٤٥٦٧٨٩٠]+'                                     # أرقام
+    r')'
+    r')'
+    r'[\s\n]*',
+    re.UNICODE | re.MULTILINE,
+)
+
 # Pattern لعلامات الخيار في نماذج العقود
 _OPTION_HEADER_RE = re.compile(
     r'\[\s*(?:الخيار\s+(?:الأول|الثاني|الثالث|الرابع|[١-٩\d]+)[^\]]*)\]',
@@ -254,43 +271,70 @@ def _extract_articles_single(text: str) -> list[dict]:
 def _extract_from_single_contract(text: str) -> List[str]:
     """
     Segment a single contract using the hybrid sub-clause strategy.
+    Supports three heading schemes (in priority order):
+      1. المادة N  — formal article numbering
+      2. البند الأول/الثاني/...  — "band" style (e.g. car-sale contracts)
+      3. أولاً/ثانياً/...  — ordinal markers
+      4. Paragraph fallback
     """
-    # 1. Extract articles
+    # 1. Try المادة N
     articles = _extract_articles_single(text)
+    if articles:
+        clauses = []
+        for art in articles:
+            splits = split_subclauses(art["text"].strip(), art["article_num"])
+            for sc in splits:
+                art_text = clean_clause_text(sc["text"])
+                if len(art_text) >= 50:
+                    clauses.append(art_text)
+        return clauses
 
-    # 2. Fallback if no article patterns found
-    if not articles:
-        # Check for ordinal markers (أولاً:, ثانياً:, etc.) as an alternative split
-        ordinal_matches = list(_ORDINAL_PATTERN.finditer(text))
-        if len(ordinal_matches) >= 1:
-            clauses = []
+    # 2. Try البند الأول / الثاني / ... (band-style contracts)
+    band_matches = list(_BAND_PATTERN.finditer(text))
+    if len(band_matches) >= 1:
+        clauses = []
 
-            # ① ضم التمهيد (ما قبل أول بند) كـ clause مستقل إن كان طويلاً
-            preamble = text[:ordinal_matches[0].start()].strip()
-            preamble_clean = clean_clause_text(preamble)
-            if len(preamble_clean) >= 50:
-                clauses.append(preamble_clean)
+        # ① ضم التمهيد (المقدمة قبل أول بند) إن كان طويلاً كافياً
+        preamble = text[:band_matches[0].start()].strip()
+        preamble_clean = clean_clause_text(preamble)
+        if len(preamble_clean) >= 50:
+            clauses.append(preamble_clean)
 
-            # ② تقطيع البنود المرقمة
-            for i, m in enumerate(ordinal_matches):
-                start = m.start()
-                end = ordinal_matches[i + 1].start() if i + \
-                    1 < len(ordinal_matches) else len(text)
-                clause_text = text[start:end].strip()
-                clause_text = clean_clause_text(clause_text)
-                if len(clause_text) >= 20:
-                    clauses.append(clause_text)
-            return clauses
+        # ② تقطيع بنود العقد
+        for i, m in enumerate(band_matches):
+            start = m.start()
+            end = band_matches[i + 1].start() if i + 1 < len(band_matches) else len(text)
+            clause_text = text[start:end].strip()
+            clause_text = clean_clause_text(clause_text)
+            if len(clause_text) >= 20:
+                clauses.append(clause_text)
+        return clauses
 
-        # Standard paragraph fallback
-        paragraphs = [p.strip()
-                      for p in text.split("\n\n") if len(p.strip()) > 60]
-        articles = [{"article_num": str(i + 1), "text": p}
-                    for i, p in enumerate(paragraphs)]
+    # 3. Try ordinal markers (أولاً:, ثانياً:, etc.)
+    ordinal_matches = list(_ORDINAL_PATTERN.finditer(text))
+    if len(ordinal_matches) >= 1:
+        clauses = []
+
+        preamble = text[:ordinal_matches[0].start()].strip()
+        preamble_clean = clean_clause_text(preamble)
+        if len(preamble_clean) >= 50:
+            clauses.append(preamble_clean)
+
+        for i, m in enumerate(ordinal_matches):
+            start = m.start()
+            end = ordinal_matches[i + 1].start() if i + 1 < len(ordinal_matches) else len(text)
+            clause_text = text[start:end].strip()
+            clause_text = clean_clause_text(clause_text)
+            if len(clause_text) >= 20:
+                clauses.append(clause_text)
+        return clauses
+
+    # 4. Paragraph fallback
+    paragraphs = [p.strip() for p in text.split("\n\n") if len(p.strip()) > 60]
+    articles = [{"article_num": str(i + 1), "text": p} for i, p in enumerate(paragraphs)]
 
     clauses = []
     for art in articles:
-        # 3. Apply hybrid sub-clause splitting
         splits = split_subclauses(art["text"].strip(), art["article_num"])
         for sc in splits:
             art_text = clean_clause_text(sc["text"])
