@@ -54,9 +54,35 @@ _SUBCLAUSE_PATTERN = re.compile(
     re.UNICODE | re.MULTILINE
 )
 
-# Ordinal markers fallback: أولاً:, ثانياً:, ثالثاً:, etc.
+# Ordinal markers: يدعم الصيغ التالية في سياقين:
+#   1. بداية سطر جديد:  \n أولاً - / \n اولا -:
+#   2. وسط سطر (PDF بسطر واحد):  : اولا- / : ثانيا-
+#
+# الصيغ المدعومة:
+#   - بتشكيل كامل:   أولاً / ثانياً / ...
+#   - بدون تشكيل:   اولا / ثانيا / ... (شائع في OCR)
+#   - بهمزة بدون تنوين: أولا / ثانيا / ...
+# الفاصل: يقبل - أو -: أو : أو .
 _ORDINAL_PATTERN = re.compile(
-    r'(?:^|\n)\s*(أولاً|ثانياً|ثالثاً|رابعاً|خامساً|سادساً|سابعاً|ثامناً|تاسعاً|عاشراً)\s*[:\.\s]',
+    r'(?:'
+    # سياق 1: بداية سطر (نص متعدد الأسطر)
+    r'(?:^|\n)\s*'
+    r'|'
+    # سياق 2: وسط سطر مسبوق بـ : أو : (نص PDF كسطر واحد)
+    r'(?<=[:،\s])\s*'
+    r')'
+    r'('
+    # صيغة بتشكيل (أولاً / ثانياً ...)
+    r'أولاً|ثانياً|ثالثاً|رابعاً|خامساً|سادساً|سابعاً|ثامناً|تاسعاً|عاشراً'
+    r'|'
+    # صيغة بهمزة بدون تنوين (أولا / ثانيا ...)
+    r'أول[اى]|ثاني[اى]|ثالث[اى]|رابع[اى]|خامس[اى]|سادس[اى]|سابع[اى]|ثامن[اى]|تاسع[اى]|عاشر[اى]'
+    r'|'
+    # صيغة بدون همزة (اولا / ثانيا ...) — الأكثر شيوعاً في OCR
+    r'اول[اى]?|اوال[اى]?|ثاني[اى]?|ثالث[اى]?|رابع[اى]?|خامس[اى]?|سادس[اى]?|سابع[اى]?|ثامن[اى]?|تاسع[اى]?|عاشر[اى]?'
+    r')'
+    # الفاصل: يقبل -: أو - أو : أو . (مع مسافات اختيارية)
+    r'\s*(?:[-–—]\s*[:.]?|[:.،])\s*',
     re.UNICODE | re.MULTILINE,
 )
 
@@ -235,16 +261,23 @@ def _extract_from_single_contract(text: str) -> List[str]:
     if not articles:
         # Check for ordinal markers (أولاً:, ثانياً:, etc.) as an alternative split
         ordinal_matches = list(_ORDINAL_PATTERN.finditer(text))
-        if len(ordinal_matches) > 1:
-            # Split by ordinal markers
+        if len(ordinal_matches) >= 1:
             clauses = []
+
+            # ① ضم التمهيد (ما قبل أول بند) كـ clause مستقل إن كان طويلاً
+            preamble = text[:ordinal_matches[0].start()].strip()
+            preamble_clean = clean_clause_text(preamble)
+            if len(preamble_clean) >= 50:
+                clauses.append(preamble_clean)
+
+            # ② تقطيع البنود المرقمة
             for i, m in enumerate(ordinal_matches):
                 start = m.start()
                 end = ordinal_matches[i + 1].start() if i + \
                     1 < len(ordinal_matches) else len(text)
                 clause_text = text[start:end].strip()
                 clause_text = clean_clause_text(clause_text)
-                if len(clause_text) >= 50:
+                if len(clause_text) >= 20:
                     clauses.append(clause_text)
             return clauses
 
