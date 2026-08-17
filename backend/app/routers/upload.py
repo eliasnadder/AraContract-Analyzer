@@ -72,7 +72,7 @@ async def upload_contract(
             message="File uploaded and text extracted successfully",
         )
 
-        return JSONResponse(status_code=status.HTTP_200_OK, content=response.dict())
+        return JSONResponse(status_code=status.HTTP_200_OK, content=response.model_dump())
 
     except Exception as e:
         logger.error(f"Error processing file {file.filename}: {e}")
