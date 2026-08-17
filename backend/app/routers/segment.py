@@ -4,7 +4,7 @@ Uses article-based extraction logic ported from the dataset pipeline (step4.py).
 Handles المادة N patterns, Arabic numerals, multi-contract files, and paragraph fallback.
 """
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, File, HTTPException, UploadFile, status
 from app.models.schemas import (
     SegmentationRequest,
     SegmentationResponse,
@@ -14,11 +14,10 @@ from app.models.schemas import (
 
 import re
 import unicodedata
-from typing import List
+from typing import List, Optional, Tuple
 
 from app.services.extraction_service import extract_text_from_file
 from app.core.config import settings
-from app.core.auth import get_current_user
 from pathlib import Path
 import logging
 
@@ -33,11 +32,26 @@ _CONTRACT_BOUNDARY = re.compile(
     r'^#{1,2}\s+\*{0,2}\s*(?:عقد|صيغة|نموذج|إنذار)',
     re.MULTILINE | re.UNICODE
 )
+# أضف قائمة الأرقام اللفظية
+_ORDINAL_WORDS = (
+    r'الأولى|الثانية|الثالثة|الرابعة|الخامسة|السادسة|السابعة|'
+    r'الثامنة|التاسعة|العاشرة|الحادية عشرة|الثانية عشرة'
+)
 
 # Detects article headers: المادة N (supports both Western and Arabic-Indic numerals)
 _ARTICLE_PATTERN = re.compile(
-    r'(?:المادة\s*[\d١٢٣٤٥٦٧٨٩٠]+\s*[-–—]?\s*)',
+    r'(?:المادة\s*[-–—]?\s*(?:[\d١٢٣٤٥٦٧٨٩٠]+|' +
+    _ORDINAL_WORDS + r')\s*[-–—:]?\s*)',
     re.UNICODE
+)
+
+# نمط بديل للعناوين المرقمة التي لا تستخدم كلمة "المادة" إطلاقاً
+# (بعض العقود تتناقض في تنسيقها وتستخدم "5. حقوق الملكية الفكرية" بدل "المادة الخامسة")
+# يُشترط أن يكون الرقم في بداية السطر، من 1-2 خانة، متبوعاً بنقطة فمسافة فحرف عربي،
+# لتقليل احتمال الالتباس مع أرقام داخل النص (نسب مئوية، مبالغ، إلخ).
+_NUMBERED_HEADING_PATTERN = re.compile(
+    r'(?:^|\n)\s*([\d١٢٣٤٥٦٧٨٩٠]{1,2})\.\s+(?=[\u0621-\u064A])',
+    re.UNICODE | re.MULTILINE,
 )
 
 _SUBCLAUSE_LETTERS = "أبجدهوزحط"
@@ -55,58 +69,24 @@ _SUBCLAUSE_PATTERN = re.compile(
     re.UNICODE | re.MULTILINE
 )
 
-# Ordinal markers: يدعم الصيغ التالية في سياقين:
-#   1. بداية سطر جديد:  \n أولاً - / \n اولا -:
-#   2. وسط سطر (PDF بسطر واحد):  : اولا- / : ثانيا-
-#
-# الصيغ المدعومة:
-#   - بتشكيل كامل:   أولاً / ثانياً / ...
-#   - بدون تشكيل:   اولا / ثانيا / ... (شائع في OCR)
-#   - بهمزة بدون تنوين: أولا / ثانيا / ...
-# الفاصل: يقبل - أو -: أو : أو .
+# Ordinal markers fallback: أولاً:, ثانياً:, ثالثاً:, etc.
 _ORDINAL_PATTERN = re.compile(
-    r'(?:'
-    # سياق 1: بداية سطر (نص متعدد الأسطر)
-    r'(?:^|\n)\s*'
-    r'|'
-    # سياق 2: وسط سطر مسبوق بـ : أو : (نص PDF كسطر واحد)
-    r'(?<=[:،\s])\s*'
-    r')'
-    r'('
-    # صيغة بتشكيل (أولاً / ثانياً ...)
-    r'أولاً|ثانياً|ثالثاً|رابعاً|خامساً|سادساً|سابعاً|ثامناً|تاسعاً|عاشراً'
-    r'|'
-    # صيغة بهمزة بدون تنوين (أولا / ثانيا ...)
-    r'أول[اى]|ثاني[اى]|ثالث[اى]|رابع[اى]|خامس[اى]|سادس[اى]|سابع[اى]|ثامن[اى]|تاسع[اى]|عاشر[اى]'
-    r'|'
-    # صيغة بدون همزة (اولا / ثانيا ...) — الأكثر شيوعاً في OCR
-    r'اول[اى]?|اوال[اى]?|ثاني[اى]?|ثالث[اى]?|رابع[اى]?|خامس[اى]?|سادس[اى]?|سابع[اى]?|ثامن[اى]?|تاسع[اى]?|عاشر[اى]?'
-    r')'
-    # الفاصل: يقبل -: أو - أو : أو . (مع مسافات اختيارية)
-    r'\s*(?:[-–—]\s*[:.]?|[:.،])\s*',
+    r'(?:^|\n)\s*(أولاً|ثانياً|ثالثاً|رابعاً|خامساً|سادساً|سابعاً|ثامناً|تاسعاً|عاشراً)\s*[:\.\s]',
     re.UNICODE | re.MULTILINE,
 )
 
-# نمط "البند" — يدعم العقود التي تستخدم "البند الأول / الثاني / الثالث ..."
-# مثل: عقود البيع العقاري، عقود السيارات، نماذج العقود المصرية/العربية
-# يدعم أيضاً: البند 1 / البند ١ (أرقام غربية وعربية-هندية)
-_BAND_PATTERN = re.compile(
-    r'(?:^|\n)\s*'
-    r'(?:'
-    r'(?:البنــ+د|البند)\s+'                                  # البند (مع/بدون تمديد حرف)
-    r'(?:'
-    r'الأول|الثاني|الثالث|الرابع|الخامس|السادس|السابع|الثامن|التاسع|العاشر'
-    r'|الحادي\s+عشر|الثاني\s+عشر|الثالث\s+عشر|الرابع\s+عشر|الخامس\s+عشر'
-    r'|[\d١٢٣٤٥٦٧٨٩٠]+'                                     # أرقام
-    r')'
-    r')'
-    r'[\s\n]*',
-    re.UNICODE | re.MULTILINE,
-)
-
-# Pattern لعلامات الخيار في نماذج العقود
+# Pattern لعلامات الخيار في نماذج العقود (فارغة، بلا كلمة "الخيار" — تبقى كما هي دوماً،
+# مثل "[ ] داخل محافظة: ...")
 _OPTION_HEADER_RE = re.compile(
     r'\[\s*(?:الخيار\s+(?:الأول|الثاني|الثالث|الرابع|[١-٩\d]+)[^\]]*)\]',
+    re.UNICODE,
+)
+
+# عناوين "الخيار" البنيوية (بدائل كاملة يختار العقد واحداً منها، مثل ثلاث طرق مختلفة
+# لاحتساب الأرباح). نلتقط رقمها ووصفها لإعادة إلصاقها ببداية كل بند فرعي تابع لها،
+# لأن حذفها بالكامل (كما كان يحدث سابقاً) يُفقد القارئ القدرة على التمييز بين البدائل.
+_OPTION_LABEL_RE = re.compile(
+    r'\[\s*الخيار\s+(الأول|الثاني|الثالث|الرابع|[١-٩\d]+)\s*[:：]?\s*([^\]]*)\]',
     re.UNICODE,
 )
 
@@ -117,7 +97,8 @@ def _clean_preamble(raw: str) -> str:
     1. علامات اختيار الخيارات  → [ الخيار الأول: ... ]
     2. الأسطر المشوهة ذات نسبة عربية منخفضة جداً
     """
-    # ① إزالة option headers
+    # ① إزالة option headers (نُعيد إلصاق عنوان الخيار النشط لاحقاً في split_subclauses
+    #    عبر _extract_option_labels، لذا حذفه هنا من المقدمة الخام آمن ولا يفقد معلومة)
     text = _OPTION_HEADER_RE.sub('', raw).strip()
 
     # ② فلترة الأسطر المشوهة سطراً بسطر
@@ -125,6 +106,11 @@ def _clean_preamble(raw: str) -> str:
     for line in text.splitlines():
         line = line.strip()
         if not line:
+            continue
+        # أسطر رقمية قصيرة (رقم مادة انفصل على سطر خاص بسبب إعادة ترتيب RTL في PDF)
+        # لا تُحذف كـ"سطر مشوه" رغم أن نسبتها العربية = 0%، فهي جزء أصيل من العنوان.
+        if re.fullmatch(r'[\d١٢٣٤٥٦٧٨٩٠]{1,3}', line):
+            clean_lines.append(line)
             continue
         total = len(re.sub(r'\s', '', line))
         if total == 0:
@@ -135,6 +121,37 @@ def _clean_preamble(raw: str) -> str:
             clean_lines.append(line)
 
     return ' '.join(clean_lines).strip()
+
+
+def _extract_option_labels(article_text: str) -> List[Tuple[int, str]]:
+    """
+    يحدد مواقع عناوين "الخيار" البنيوية ضمن نص المادة (مثل بدائل طريقة
+    احتساب الأرباح: الخيار الأول/الثاني/الثالث)، مع موضع نهاية كل عنوان.
+    تُستخدم القائمة بعد ذلك لإلصاق تسمية العنوان النشط ببداية كل بند فرعي
+    تابع له بدل فقدان السياق كلياً عند حذف العنوان كـ"ضوضاء".
+
+    ملاحظة: هذا لا يمس علامات الاختيار الفارغة (مثل "[ ] داخل محافظة")
+    لأنها لا تحتوي كلمة "الخيار" فتفلت من هذا النمط تماماً.
+    """
+    labels = []
+    for m in _OPTION_LABEL_RE.finditer(article_text):
+        ordinal = m.group(1).strip()
+        desc = m.group(2).strip(' :：\u200b')
+        label = f"الخيار {ordinal}" + (f": {desc}" if desc else "")
+        labels.append((m.end(), label))
+    return labels
+
+
+def _label_for_position(labels: List[Tuple[int, str]], pos: int) -> Optional[str]:
+    """يعيد آخر عنوان "خيار" ورد قبل الموضع المحدد ضمن نص المادة، أو None إن لم يوجد."""
+    active = None
+    for end_pos, label in labels:
+        if end_pos <= pos:
+            active = label
+        else:
+            break
+    return active
+
 
 # ── Text Helpers ───────────────────────────────────────────────────────────────
 
@@ -156,16 +173,29 @@ def normalize_arabic(text: str) -> str:
 def split_subclauses(article_text: str, article_num: str) -> list[dict]:
     """
     Hybrid sub-clause splitting exactly matching step4.py's formatting.
+
+    إن احتوت المادة عناوين "خيار" بنيوية (بدائل كاملة، انظر _extract_option_labels)،
+    يُلصق عنوان الخيار النشط ببداية كل بند فرعي تابع له (وبنص المادة كاملاً إن لم
+    تنقسم إلى فروع أبجدية أصلاً)، حتى يبقى كل بند مستقلاً بذاته ومفهوم السياق حتى
+    لو عُرض بمعزل عن بقية بنود نفس المادة.
     """
     matches = list(_SUBCLAUSE_PATTERN.finditer(article_text))
+    option_labels = _extract_option_labels(article_text)
 
     if not matches:
+        text = article_text
+        # نستخدم نهاية النص لا بدايته: عنوان "الخيار" يسبق جسم المادة دائماً،
+        # فالتحقق عند الموضع 0 لا يجد أي عنوان نشط أبداً (خطأ اكتُشف أثناء الاختبار).
+        label = _label_for_position(option_labels, len(
+            article_text)) if option_labels else None
+        if label:
+            text = f"({label}) {text}"
         return [
             {
                 "article_num": article_num,
                 "parent_article_num": None,
                 "sub_clause": "",
-                "text": article_text,
+                "text": text,
             }
         ]
 
@@ -189,11 +219,16 @@ def split_subclauses(article_text: str, article_num: str) -> list[dict]:
         # تنظيف جسم البند
         sub_body = re.sub(r'[\u200b●○]+', '', sub_body).strip()
 
+        # عنوان الخيار النشط عند موضع هذا البند الفرعي تحديداً (قد يختلف بين
+        # فرع وآخر ضمن نفس المادة إن كانت هناك عدة خيارات متتالية)
+        label = _label_for_position(option_labels, m.start())
+        label_prefix = f"({label}) " if label else ""
+
         # استخدام الـ \n لربط المقدمة بالبند الفرعي كما يفعل step4.py تماماً
-        if clean_pre and len(clean_pre) >= 10:
-            full_text = f"{clean_pre}\n{sub_letter}- {sub_body}"
+        if i == 0 and clean_pre and len(clean_pre) >= 10:
+            full_text = f"{clean_pre}\n{label_prefix}{sub_letter}- {sub_body}"
         else:
-            full_text = f"{sub_letter}- {sub_body}"
+            full_text = f"{label_prefix}{sub_letter}- {sub_body}"
 
         results.append(
             {
@@ -236,7 +271,8 @@ def clean_clause_text(text: str) -> str:
 
     # ── إضافات جديدة ──────────────────────────────────────────────────────
 
-    # ⑦ إزالة علامات اختيار الخيارات التي تصل أحياناً لجسم البند
+    # ⑦ إزالة علامات اختيار الخيارات الفارغة المتبقية (بلا كلمة "الخيار"،
+    #    فهذه لا تُلصق كتسمية لأنها ليست بديلاً بنيوياً بل حقل تعبئة فارغ)
     text = _OPTION_HEADER_RE.sub('', text)
 
     # ⑧ إصلاح الأقواس المعكوسة المتبقية (حالات لا يعالجها الـ extractor)
@@ -251,8 +287,21 @@ def clean_clause_text(text: str) -> str:
 def _extract_articles_single(text: str) -> list[dict]:
     """
     Extract individual articles from a single contract block.
+
+    يدمج نتائج نمطين: "المادة N" الرسمي، والعناوين المرقمة المجردة
+    (مثل "5.") التي تظهر أحياناً في نفس العقد كتناقض تنسيقي.
     """
-    matches = list(_ARTICLE_PATTERN.finditer(text))
+    combined = list(_ARTICLE_PATTERN.finditer(text)) + \
+        list(_NUMBERED_HEADING_PATTERN.finditer(text))
+    combined.sort(key=lambda m: m.start())
+
+    # إزالة التطابقات شديدة التقارب (أقل من 3 حروف فرق) التي قد تنتج
+    # عن تداخل النمطين على نفس الموضع تقريباً
+    matches = []
+    for m in combined:
+        if not matches or m.start() - matches[-1].start() > 3:
+            matches.append(m)
+
     if not matches:
         return []
 
@@ -271,70 +320,36 @@ def _extract_articles_single(text: str) -> list[dict]:
 def _extract_from_single_contract(text: str) -> List[str]:
     """
     Segment a single contract using the hybrid sub-clause strategy.
-    Supports three heading schemes (in priority order):
-      1. المادة N  — formal article numbering
-      2. البند الأول/الثاني/...  — "band" style (e.g. car-sale contracts)
-      3. أولاً/ثانياً/...  — ordinal markers
-      4. Paragraph fallback
     """
-    # 1. Try المادة N
+    # 1. Extract articles
     articles = _extract_articles_single(text)
-    if articles:
-        clauses = []
-        for art in articles:
-            splits = split_subclauses(art["text"].strip(), art["article_num"])
-            for sc in splits:
-                art_text = clean_clause_text(sc["text"])
-                if len(art_text) >= 50:
-                    clauses.append(art_text)
-        return clauses
 
-    # 2. Try البند الأول / الثاني / ... (band-style contracts)
-    band_matches = list(_BAND_PATTERN.finditer(text))
-    if len(band_matches) >= 1:
-        clauses = []
+    # 2. Fallback if no article patterns found
+    if not articles:
+        # Check for ordinal markers (أولاً:, ثانياً:, etc.) as an alternative split
+        ordinal_matches = list(_ORDINAL_PATTERN.finditer(text))
+        if len(ordinal_matches) > 1:
+            # Split by ordinal markers
+            clauses = []
+            for i, m in enumerate(ordinal_matches):
+                start = m.start()
+                end = ordinal_matches[i + 1].start() if i + \
+                    1 < len(ordinal_matches) else len(text)
+                clause_text = text[start:end].strip()
+                clause_text = clean_clause_text(clause_text)
+                if len(clause_text) >= 50:
+                    clauses.append(clause_text)
+            return clauses
 
-        # ① ضم التمهيد (المقدمة قبل أول بند) إن كان طويلاً كافياً
-        preamble = text[:band_matches[0].start()].strip()
-        preamble_clean = clean_clause_text(preamble)
-        if len(preamble_clean) >= 50:
-            clauses.append(preamble_clean)
-
-        # ② تقطيع بنود العقد
-        for i, m in enumerate(band_matches):
-            start = m.start()
-            end = band_matches[i + 1].start() if i + 1 < len(band_matches) else len(text)
-            clause_text = text[start:end].strip()
-            clause_text = clean_clause_text(clause_text)
-            if len(clause_text) >= 20:
-                clauses.append(clause_text)
-        return clauses
-
-    # 3. Try ordinal markers (أولاً:, ثانياً:, etc.)
-    ordinal_matches = list(_ORDINAL_PATTERN.finditer(text))
-    if len(ordinal_matches) >= 1:
-        clauses = []
-
-        preamble = text[:ordinal_matches[0].start()].strip()
-        preamble_clean = clean_clause_text(preamble)
-        if len(preamble_clean) >= 50:
-            clauses.append(preamble_clean)
-
-        for i, m in enumerate(ordinal_matches):
-            start = m.start()
-            end = ordinal_matches[i + 1].start() if i + 1 < len(ordinal_matches) else len(text)
-            clause_text = text[start:end].strip()
-            clause_text = clean_clause_text(clause_text)
-            if len(clause_text) >= 20:
-                clauses.append(clause_text)
-        return clauses
-
-    # 4. Paragraph fallback
-    paragraphs = [p.strip() for p in text.split("\n\n") if len(p.strip()) > 60]
-    articles = [{"article_num": str(i + 1), "text": p} for i, p in enumerate(paragraphs)]
+        # Standard paragraph fallback
+        paragraphs = [p.strip()
+                      for p in text.split("\n\n") if len(p.strip()) > 60]
+        articles = [{"article_num": str(i + 1), "text": p}
+                    for i, p in enumerate(paragraphs)]
 
     clauses = []
     for art in articles:
+        # 3. Apply hybrid sub-clause splitting
         splits = split_subclauses(art["text"].strip(), art["article_num"])
         for sc in splits:
             art_text = clean_clause_text(sc["text"])
@@ -378,10 +393,7 @@ def segment_arabic_text(text: str) -> List[str]:
     response_model=SegmentationResponse,
     responses={400: {"model": ErrorResponse}, 500: {"model": ErrorResponse}},
 )
-async def segment_contract(
-    request: SegmentationRequest,
-    uid: str = Depends(get_current_user)
-):
+async def segment_contract(request: SegmentationRequest):
     """
     Segment contract text into clauses.
 
@@ -410,10 +422,7 @@ async def segment_contract(
         500: {"model": ErrorResponse}
     },
 )
-async def segment_contract_file(
-    file: UploadFile = File(...),
-    uid: str = Depends(get_current_user)
-):
+async def segment_contract_file(file: UploadFile = File(...)):
     """
     Upload a contract file (PDF or image), extract text, then segment into clauses.
 
