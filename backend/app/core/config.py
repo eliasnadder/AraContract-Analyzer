@@ -35,7 +35,9 @@ class Settings(BaseSettings):
     ]
 
     # Model paths
-    CLASSIFIER_MODEL_PATH: str = "../models/checkpoints/aracontract_classifier.pt"
+    CLASSIFIER_MODEL_PATH: str = str(
+        BASE_DIR / "models" / "checkpoints" / "aracontract_classifier.pt"
+    )
     MAX_SEQUENCE_LENGTH: int = 512
 
     # ── RAG — Embedding ────────────────────────────────────────────────────

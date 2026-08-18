@@ -6,6 +6,12 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
+SYSTEM_PROMPT = (
+    "أنت مساعد قانوني عربي. يجب أن تكون كل إجاباتك باللغة العربية الفصحى فقط، "
+    "بدون أي كلمات أو أحرف من لغات أخرى (كالإنجليزية أو الصينية) إطلاقاً، "
+    "إلا إذا كانت مصطلحاً تقنياً لا مقابل له بالعربية."
+)
+
 
 class OllamaHandler(BaseLLMHandler):
     def __init__(self):
@@ -18,14 +24,18 @@ class OllamaHandler(BaseLLMHandler):
         except ImportError as exc:
             raise ImportError("httpx package is required for Ollama integration") from exc
 
-        url = f"{self._base_url}/api/generate"
+        url = f"{self._base_url}/api/chat"
         payload = {
             "model": self._model,
-            "prompt": prompt,
+            "messages": [
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": prompt},
+            ],
             "stream": False,
             "options": {
                 "temperature": 0.1,
                 "num_predict": max_tokens,
+                "repeat_penalty": 1.15,
             },
         }
 
@@ -34,7 +44,7 @@ class OllamaHandler(BaseLLMHandler):
                 response = client.post(url, json=payload)
             response.raise_for_status()
             data = response.json()
-            text = data.get("response", "")
+            text = data.get("message", {}).get("content", "")
             if not text:
                 raise RuntimeError("Ollama returned an empty response")
             return text.strip()
