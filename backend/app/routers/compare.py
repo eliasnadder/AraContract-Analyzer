@@ -79,7 +79,6 @@ async def compare_contract_endpoint(
 
         return JSONResponse(
             status_code=status.HTTP_200_OK,
-            # content=comparison_result.dict(),
             content=comparison_result.model_dump()
         )
 

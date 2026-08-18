@@ -1,0 +1,390 @@
+ عدد عينات الاختبار: 869
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+WARNING:huggingface_hub.utils._http:Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+config.json: 100% 468/468 [00:00<00:00, 53.9kB/s]tokenizer_config.json: 100% 86.0/86.0 [00:00<00:00, 8.87kB/s]vocab.txt: 100% 305k/305k [00:00<00:00, 15.5MB/s]special_tokens_map.json: 100% 112/112 [00:00<00:00, 12.7kB/s]pytorch_model.bin: reconstructing file: 100%  439MB /  439MB, 39.9MB/s  pytorch_model.bin: downloading bytes:   415MB, 37.2MB/s  Loading weights: 100% 199/199 [00:00<00:00, 6432.04it/s][transformers] BertModel LOAD REPORT from: CAMeL-Lab/bert-base-arabic-camelbert-msa
+Key                                        | Status     |  | 
+-------------------------------------------+------------+--+-
+cls.predictions.transform.LayerNorm.weight | UNEXPECTED |  | 
+cls.predictions.bias                       | UNEXPECTED |  | 
+cls.predictions.transform.dense.weight     | UNEXPECTED |  | 
+cls.seq_relationship.bias                  | UNEXPECTED |  | 
+cls.predictions.transform.LayerNorm.bias   | UNEXPECTED |  | 
+cls.predictions.decoder.bias               | UNEXPECTED |  | 
+cls.predictions.transform.dense.bias       | UNEXPECTED |  | 
+cls.predictions.decoder.weight             | UNEXPECTED |  | 
+cls.seq_relationship.weight                | UNEXPECTED |  | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+model.safetensors: reconstructing file: 100%  439MB /  439MB, 28.9MB/s  model.safetensors: downloading bytes:   415MB, 34.5MB/s  
+============================================================
+النموذج DL الخام (بدون overrides)
+============================================================
+
+-- Clause Type --
+                     precision    recall  f1-score   support
+
+ dispute_resolution     0.9529    0.9643    0.9586        84
+duration_expiration     0.8467    0.8923    0.8689       130
+ general_provisions     0.9385    0.9385    0.9385       130
+party_obligations_a     0.7015    0.7581    0.7287        62
+party_obligations_b     0.8857    0.8378    0.8611        37
+  payment_financial     0.8922    0.9010    0.8966       202
+  penalties_damages     0.9528    0.9380    0.9453       129
+        termination     0.8929    0.7895    0.8380        95
+
+           accuracy                         0.8918       869
+          macro avg     0.8829    0.8774    0.8795       869
+       weighted avg     0.8934    0.8918    0.8920       869
+
+
+-- Risk Level --
+              precision    recall  f1-score   support
+
+        high     0.7848    0.9115    0.8434       192
+         low     0.9349    0.9076    0.9211       617
+      medium     0.5745    0.4500    0.5047        60
+
+    accuracy                         0.8769       869
+   macro avg     0.7647    0.7564    0.7564       869
+weighted avg     0.8768    0.8769    0.8751       869
+
+Loading weights: 100% 199/199 [00:00<00:00, 6720.07it/s][transformers] BertModel LOAD REPORT from: CAMeL-Lab/bert-base-arabic-camelbert-msa
+Key                                        | Status     |  | 
+-------------------------------------------+------------+--+-
+cls.predictions.transform.LayerNorm.weight | UNEXPECTED |  | 
+cls.predictions.bias                       | UNEXPECTED |  | 
+cls.predictions.transform.dense.weight     | UNEXPECTED |  | 
+cls.seq_relationship.bias                  | UNEXPECTED |  | 
+cls.predictions.transform.LayerNorm.bias   | UNEXPECTED |  | 
+cls.predictions.decoder.bias               | UNEXPECTED |  | 
+cls.predictions.transform.dense.bias       | UNEXPECTED |  | 
+cls.predictions.decoder.weight             | UNEXPECTED |  | 
+cls.seq_relationship.weight                | UNEXPECTED |  | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+
+============================================================
+النموذج الهجين (مع overrides)
+============================================================
+
+-- Clause Type --
+                     precision    recall  f1-score   support
+
+ dispute_resolution     0.8265    0.9643    0.8901        84
+duration_expiration     0.8582    0.8846    0.8712       130
+ general_provisions     0.9365    0.9077    0.9219       130
+party_obligations_a     0.7083    0.5484    0.6182        62
+party_obligations_b     0.5714    0.7568    0.6512        37
+  payment_financial     0.8786    0.8960    0.8873       202
+  penalties_damages     0.9677    0.9302    0.9486       129
+        termination     0.8929    0.7895    0.8380        95
+
+           accuracy                         0.8654       869
+          macro avg     0.8300    0.8347    0.8283       869
+       weighted avg     0.8688    0.8654    0.8648       869
+
+
+-- Risk Level --
+              precision    recall  f1-score   support
+
+        high     0.7848    0.9115    0.8434       192
+         low     0.9349    0.9076    0.9211       617
+      medium     0.5745    0.4500    0.5047        60
+
+    accuracy                         0.8769       869
+   macro avg     0.7647    0.7564    0.7564       869
+weighted avg     0.8768    0.8769    0.8751       869
+
+
+============================================================
+ملخص الفارق (Overrides Contribution)
+============================================================
+Type Macro F1:  0.8795 → 0.8283  (Δ -0.0511)
+Risk Macro F1:  0.7564 → 0.7564  (Δ +0.0000)
+Loading weights: 100% 199/199 [00:00<00:00, 6112.44it/s][transformers] BertModel LOAD REPORT from: CAMeL-Lab/bert-base-arabic-camelbert-msa
+Key                                        | Status     |  | 
+-------------------------------------------+------------+--+-
+cls.predictions.transform.LayerNorm.weight | UNEXPECTED |  | 
+cls.predictions.bias                       | UNEXPECTED |  | 
+cls.predictions.transform.dense.weight     | UNEXPECTED |  | 
+cls.seq_relationship.bias                  | UNEXPECTED |  | 
+cls.predictions.transform.LayerNorm.bias   | UNEXPECTED |  | 
+cls.predictions.decoder.bias               | UNEXPECTED |  | 
+cls.predictions.transform.dense.bias       | UNEXPECTED |  | 
+cls.predictions.decoder.weight             | UNEXPECTED |  | 
+cls.seq_relationship.weight                | UNEXPECTED |  | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+Loading weights: 100% 199/199 [00:00<00:00, 5982.24it/s][transformers] BertModel LOAD REPORT from: CAMeL-Lab/bert-base-arabic-camelbert-msa
+Key                                        | Status     |  | 
+-------------------------------------------+------------+--+-
+cls.predictions.transform.LayerNorm.weight | UNEXPECTED |  | 
+cls.predictions.bias                       | UNEXPECTED |  | 
+cls.predictions.transform.dense.weight     | UNEXPECTED |  | 
+cls.seq_relationship.bias                  | UNEXPECTED |  | 
+cls.predictions.transform.LayerNorm.bias   | UNEXPECTED |  | 
+cls.predictions.decoder.bias               | UNEXPECTED |  | 
+cls.predictions.transform.dense.bias       | UNEXPECTED |  | 
+cls.predictions.decoder.weight             | UNEXPECTED |  | 
+cls.seq_relationship.weight                | UNEXPECTED |  | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+القواعد غيّرت التنبؤ في: 45/869 (5.2%)
+  → صححت تنبؤاً خاطئاً: 4 حالة
+  → خرّبت تنبؤاً كان صحيحاً: 27 حالة
+
+
+ عدد عينات الاختبار: 869
+Loading weights: 100% 199/199 [00:00<00:00, 6181.89it/s][transformers] BertModel LOAD REPORT from: CAMeL-Lab/bert-base-arabic-camelbert-msa
+Key                                        | Status     |  | 
+-------------------------------------------+------------+--+-
+cls.predictions.transform.LayerNorm.weight | UNEXPECTED |  | 
+cls.predictions.bias                       | UNEXPECTED |  | 
+cls.predictions.transform.dense.weight     | UNEXPECTED |  | 
+cls.seq_relationship.bias                  | UNEXPECTED |  | 
+cls.predictions.transform.LayerNorm.bias   | UNEXPECTED |  | 
+cls.predictions.decoder.bias               | UNEXPECTED |  | 
+cls.predictions.transform.dense.bias       | UNEXPECTED |  | 
+cls.predictions.decoder.weight             | UNEXPECTED |  | 
+cls.seq_relationship.weight                | UNEXPECTED |  | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+
+============================================================
+النموذج DL الخام (بدون overrides)
+============================================================
+
+-- Clause Type --
+                     precision    recall  f1-score   support
+
+ dispute_resolution     0.9529    0.9643    0.9586        84
+duration_expiration     0.8467    0.8923    0.8689       130
+ general_provisions     0.9385    0.9385    0.9385       130
+party_obligations_a     0.7015    0.7581    0.7287        62
+party_obligations_b     0.8857    0.8378    0.8611        37
+  payment_financial     0.8922    0.9010    0.8966       202
+  penalties_damages     0.9528    0.9380    0.9453       129
+        termination     0.8929    0.7895    0.8380        95
+
+           accuracy                         0.8918       869
+          macro avg     0.8829    0.8774    0.8795       869
+       weighted avg     0.8934    0.8918    0.8920       869
+
+
+-- Risk Level --
+              precision    recall  f1-score   support
+
+        high     0.7848    0.9115    0.8434       192
+         low     0.9349    0.9076    0.9211       617
+      medium     0.5745    0.4500    0.5047        60
+
+    accuracy                         0.8769       869
+   macro avg     0.7647    0.7564    0.7564       869
+weighted avg     0.8768    0.8769    0.8751       869
+
+Loading weights: 100% 199/199 [00:00<00:00, 6723.70it/s][transformers] BertModel LOAD REPORT from: CAMeL-Lab/bert-base-arabic-camelbert-msa
+Key                                        | Status     |  | 
+-------------------------------------------+------------+--+-
+cls.predictions.transform.LayerNorm.weight | UNEXPECTED |  | 
+cls.predictions.bias                       | UNEXPECTED |  | 
+cls.predictions.transform.dense.weight     | UNEXPECTED |  | 
+cls.seq_relationship.bias                  | UNEXPECTED |  | 
+cls.predictions.transform.LayerNorm.bias   | UNEXPECTED |  | 
+cls.predictions.decoder.bias               | UNEXPECTED |  | 
+cls.predictions.transform.dense.bias       | UNEXPECTED |  | 
+cls.predictions.decoder.weight             | UNEXPECTED |  | 
+cls.seq_relationship.weight                | UNEXPECTED |  | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+
+============================================================
+النموذج الهجين (مع overrides)
+============================================================
+
+-- Clause Type --
+                     precision    recall  f1-score   support
+
+ dispute_resolution     0.9529    0.9643    0.9586        84
+duration_expiration     0.8467    0.8923    0.8689       130
+ general_provisions     0.9385    0.9385    0.9385       130
+party_obligations_a     0.7015    0.7581    0.7287        62
+party_obligations_b     0.8205    0.8649    0.8421        37
+  payment_financial     0.8950    0.8861    0.8905       202
+  penalties_damages     0.9528    0.9380    0.9453       129
+        termination     0.8929    0.7895    0.8380        95
+
+           accuracy                         0.8895       869
+          macro avg     0.8751    0.8789    0.8763       869
+       weighted avg     0.8912    0.8895    0.8898       869
+
+
+-- Risk Level --
+              precision    recall  f1-score   support
+
+        high     0.7848    0.9115    0.8434       192
+         low     0.9349    0.9076    0.9211       617
+      medium     0.5745    0.4500    0.5047        60
+
+    accuracy                         0.8769       869
+   macro avg     0.7647    0.7564    0.7564       869
+weighted avg     0.8768    0.8769    0.8751       869
+
+
+============================================================
+ملخص الفارق (Overrides Contribution)
+============================================================
+Type Macro F1:  0.8795 → 0.8763  (Δ -0.0031)
+Risk Macro F1:  0.7564 → 0.7564  (Δ +0.0000)
+Loading weights: 100% 199/199 [00:00<00:00, 7373.05it/s][transformers] BertModel LOAD REPORT from: CAMeL-Lab/bert-base-arabic-camelbert-msa
+Key                                        | Status     |  | 
+-------------------------------------------+------------+--+-
+cls.predictions.transform.LayerNorm.weight | UNEXPECTED |  | 
+cls.predictions.bias                       | UNEXPECTED |  | 
+cls.predictions.transform.dense.weight     | UNEXPECTED |  | 
+cls.seq_relationship.bias                  | UNEXPECTED |  | 
+cls.predictions.transform.LayerNorm.bias   | UNEXPECTED |  | 
+cls.predictions.decoder.bias               | UNEXPECTED |  | 
+cls.predictions.transform.dense.bias       | UNEXPECTED |  | 
+cls.predictions.decoder.weight             | UNEXPECTED |  | 
+cls.seq_relationship.weight                | UNEXPECTED |  | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+Loading weights: 100% 199/199 [00:00<00:00, 6213.37it/s][transformers] BertModel LOAD REPORT from: CAMeL-Lab/bert-base-arabic-camelbert-msa
+Key                                        | Status     |  | 
+-------------------------------------------+------------+--+-
+cls.predictions.transform.LayerNorm.weight | UNEXPECTED |  | 
+cls.predictions.bias                       | UNEXPECTED |  | 
+cls.predictions.transform.dense.weight     | UNEXPECTED |  | 
+cls.seq_relationship.bias                  | UNEXPECTED |  | 
+cls.predictions.transform.LayerNorm.bias   | UNEXPECTED |  | 
+cls.predictions.decoder.bias               | UNEXPECTED |  | 
+cls.predictions.transform.dense.bias       | UNEXPECTED |  | 
+cls.predictions.decoder.weight             | UNEXPECTED |  | 
+cls.seq_relationship.weight                | UNEXPECTED |  | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+القواعد غيّرت التنبؤ في: 4/869 (0.5%)
+  → صححت تنبؤاً خاطئاً: 1 حالة
+  → خرّبت تنبؤاً كان صحيحاً: 3 حالة
+
+ Loading weights: 100% 199/199 [00:00<00:00, 7203.35it/s][transformers] BertModel LOAD REPORT from: CAMeL-Lab/bert-base-arabic-camelbert-msa
+Key                                        | Status     |  | 
+-------------------------------------------+------------+--+-
+cls.predictions.transform.LayerNorm.weight | UNEXPECTED |  | 
+cls.predictions.bias                       | UNEXPECTED |  | 
+cls.predictions.transform.dense.weight     | UNEXPECTED |  | 
+cls.seq_relationship.bias                  | UNEXPECTED |  | 
+cls.predictions.transform.LayerNorm.bias   | UNEXPECTED |  | 
+cls.predictions.decoder.bias               | UNEXPECTED |  | 
+cls.predictions.transform.dense.bias       | UNEXPECTED |  | 
+cls.predictions.decoder.weight             | UNEXPECTED |  | 
+cls.seq_relationship.weight                | UNEXPECTED |  | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+Loading weights: 100% 199/199 [00:00<00:00, 6769.18it/s][transformers] BertModel LOAD REPORT from: CAMeL-Lab/bert-base-arabic-camelbert-msa
+Key                                        | Status     |  | 
+-------------------------------------------+------------+--+-
+cls.predictions.transform.LayerNorm.weight | UNEXPECTED |  | 
+cls.predictions.bias                       | UNEXPECTED |  | 
+cls.predictions.transform.dense.weight     | UNEXPECTED |  | 
+cls.seq_relationship.bias                  | UNEXPECTED |  | 
+cls.predictions.transform.LayerNorm.bias   | UNEXPECTED |  | 
+cls.predictions.decoder.bias               | UNEXPECTED |  | 
+cls.predictions.transform.dense.bias       | UNEXPECTED |  | 
+cls.predictions.decoder.weight             | UNEXPECTED |  | 
+cls.seq_relationship.weight                | UNEXPECTED |  | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+[party_b_high] gold=high | المادة 5 –
+أ- التزم الفريق الأول بإجراء معاملة إفراز الحصة المبيعة في ...
+[party_b_high] gold=high | المادة ۱۲-
+
+التزم الفريق الثاني بعدم رهن الاستثمار وبعدم التنازل عن هذ...
+Loading weights: 100% 199/199 [00:00<00:00, 6959.67it/s][transformers] BertModel LOAD REPORT from: CAMeL-Lab/bert-base-arabic-camelbert-msa
+Key                                        | Status     |  | 
+-------------------------------------------+------------+--+-
+cls.predictions.transform.LayerNorm.weight | UNEXPECTED |  | 
+cls.predictions.bias                       | UNEXPECTED |  | 
+cls.predictions.transform.dense.weight     | UNEXPECTED |  | 
+cls.seq_relationship.bias                  | UNEXPECTED |  | 
+cls.predictions.transform.LayerNorm.bias   | UNEXPECTED |  | 
+cls.predictions.decoder.bias               | UNEXPECTED |  | 
+cls.predictions.transform.dense.bias       | UNEXPECTED |  | 
+cls.predictions.decoder.weight             | UNEXPECTED |  | 
+cls.seq_relationship.weight                | UNEXPECTED |  | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+Loading weights: 100% 199/199 [00:00<00:00, 6359.95it/s][transformers] BertModel LOAD REPORT from: CAMeL-Lab/bert-base-arabic-camelbert-msa
+Key                                        | Status     |  | 
+-------------------------------------------+------------+--+-
+cls.predictions.transform.LayerNorm.weight | UNEXPECTED |  | 
+cls.predictions.bias                       | UNEXPECTED |  | 
+cls.predictions.transform.dense.weight     | UNEXPECTED |  | 
+cls.seq_relationship.bias                  | UNEXPECTED |  | 
+cls.predictions.transform.LayerNorm.bias   | UNEXPECTED |  | 
+cls.predictions.decoder.bias               | UNEXPECTED |  | 
+cls.predictions.transform.dense.bias       | UNEXPECTED |  | 
+cls.predictions.decoder.weight             | UNEXPECTED |  | 
+cls.seq_relationship.weight                | UNEXPECTED |  | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+[party_b_high] gold=high | المادة3-أ- التزم الفريق الثاني باستحضار العمال والأشياء اللازمة للعمل ...
+[party_b_high] gold=high | المادة 5-أ- إذا تأخر الفريق الثاني عن المباشرة بأية مرحلة من مراحل الع...
+Loading weights: 100% 199/199 [00:00<00:00, 8812.12it/s][transformers] BertModel LOAD REPORT from: CAMeL-Lab/bert-base-arabic-camelbert-msa
+Key                                        | Status     |  | 
+-------------------------------------------+------------+--+-
+cls.predictions.transform.LayerNorm.weight | UNEXPECTED |  | 
+cls.predictions.bias                       | UNEXPECTED |  | 
+cls.predictions.transform.dense.weight     | UNEXPECTED |  | 
+cls.seq_relationship.bias                  | UNEXPECTED |  | 
+cls.predictions.transform.LayerNorm.bias   | UNEXPECTED |  | 
+cls.predictions.decoder.bias               | UNEXPECTED |  | 
+cls.predictions.transform.dense.bias       | UNEXPECTED |  | 
+cls.predictions.decoder.weight             | UNEXPECTED |  | 
+cls.seq_relationship.weight                | UNEXPECTED |  | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+[party_b_high] gold=high | المادة ۲-
+
+وضع الفريق الأول لدى الفريق الثاني القابل لذلك حق استثمار ا...
+Loading weights: 100% 199/199 [00:00<00:00, 8717.33it/s][transformers] BertModel LOAD REPORT from: CAMeL-Lab/bert-base-arabic-camelbert-msa
+Key                                        | Status     |  | 
+-------------------------------------------+------------+--+-
+cls.predictions.transform.LayerNorm.weight | UNEXPECTED |  | 
+cls.predictions.bias                       | UNEXPECTED |  | 
+cls.predictions.transform.dense.weight     | UNEXPECTED |  | 
+cls.seq_relationship.bias                  | UNEXPECTED |  | 
+cls.predictions.transform.LayerNorm.bias   | UNEXPECTED |  | 
+cls.predictions.decoder.bias               | UNEXPECTED |  | 
+cls.predictions.transform.dense.bias       | UNEXPECTED |  | 
+cls.predictions.decoder.weight             | UNEXPECTED |  | 
+cls.seq_relationship.weight                | UNEXPECTED |  | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+[party_b_high] gold=high | ج- التزم الفريق الثاني بعدم تسهيل الدعارة باستقدام المشبوهات والتعاقد ...
+[party_b_high] gold=high | ب- التزم الفريق الثاني بعدم تقديم المشروبات الكحولية والمخدرات في المق...
+[party_b_high] gold=high | المادة 4-
+
+إذا تأخر الفريق الثاني أو نائبه أو ورثته من بعده في دفع أي ...
+
+============================================================
+عدد مرات انطباق كل شرط على 869 عينة:
+============================================================
+  high_risk_party_b_triggered: 8
+  high_risk_termination_triggered: 0
+  medium_risk_damages_triggered: 5
+  medium_risk_damages_condition_but_not_low: 5

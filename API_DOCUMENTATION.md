@@ -9,25 +9,21 @@
 ## Table of Contents
 
 1. [General](#1-general)
-2. [Common Types](#2-common-types)
-3. [Upload](#3-upload)
-4. [Segmentation](#4-segmentation)
-5. [Classification](#5-classification)
-6. [Summarization](#6-summarization)
-7. [Full Analysis](#7-full-analysis)
-8. [Contract Comparison](#8-contract-comparison)
-9. [RAG — Contract Q&A](#9-rag--contract-qa)
-10. [Error Handling](#10-error-handling)
-11. [Configuration Reference](#11-configuration-reference)
+2. [Authentication](#2-authentication)
+3. [Common Types](#3-common-types)
+4. [Upload](#4-upload)
+5. [Segmentation](#5-segmentation)
+6. [Classification](#6-classification)
+7. [Summarization](#7-summarization)
+8. [Full Analysis](#8-full-analysis)
+9. [Contract Comparison](#9-contract-comparison)
+10. [RAG — Contract Q&A](#10-rag--contract-qa)
+11. [Error Handling](#11-error-handling)
+12. [Configuration Reference](#12-configuration-reference)
 
 ---
 
 ## 1. General
-
-### Authentication
-
-Authentication is currently disabled. The `get_current_user` dependency in `analyze.py` is commented out.  
-All endpoints are publicly accessible.
 
 ### Content Types
 
@@ -47,7 +43,7 @@ All endpoints are publicly accessible.
 
 #### `GET /`
 
-Returns API metadata.
+Returns API metadata. **No authentication required.**
 
 **Response `200`**
 ```json
@@ -63,7 +59,7 @@ Returns API metadata.
 
 #### `GET /health`
 
-Lightweight health check — use for load-balancer probes.
+Lightweight health check — use for load-balancer probes. **No authentication required.**
 
 **Response `200`**
 ```json
@@ -72,7 +68,77 @@ Lightweight health check — use for load-balancer probes.
 
 ---
 
-## 2. Common Types
+## 2. Authentication
+
+All contract endpoints (upload, segment, classify, summarize, analyze, compare) are protected with **Firebase Authentication** using Bearer tokens.
+
+### How it works
+
+The API validates Firebase ID tokens via the `Authorization` header on every protected request. Tokens are issued by Firebase Auth after the user signs in on the client side.
+
+### Getting a token
+
+1. Sign in via Firebase Auth on the client (email/password, Google, etc.)
+2. Retrieve the ID token:
+   ```javascript
+   const token = await firebase.auth().currentUser.getIdToken();
+   ```
+3. Include it in every API request header.
+
+### Request header
+
+```
+Authorization: Bearer <firebase_id_token>
+```
+
+### Token lifecycle
+
+| Property | Detail |
+|----------|--------|
+| Expiry | 1 hour |
+| Refresh | Call `getIdToken(/* forceRefresh */ true)` on the client to get a fresh token |
+| Scope | Per-user — the token encodes the Firebase UID |
+
+### Authentication errors
+
+| Code | Detail | Cause |
+|------|--------|-------|
+| `401` | `"Authorization token missing"` | `Authorization` header absent |
+| `401` | `"Invalid or expired token"` | Token failed Firebase verification (expired, revoked, malformed) |
+
+### Example with curl
+
+```bash
+# Get your token first (via Firebase client SDK or REST API), then:
+curl -X POST http://localhost:8000/api/contract/analyze \
+  -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  -F "file=@contract.pdf"
+```
+
+### Protected vs. public endpoints
+
+| Endpoint | Protected |
+|----------|-----------|
+| `GET /` | ❌ Public |
+| `GET /health` | ❌ Public |
+| `POST /api/contract/upload` | ✅ Firebase token required |
+| `POST /api/contract/segment` | ✅ Firebase token required |
+| `POST /api/contract/segment/file` | ✅ Firebase token required |
+| `POST /api/contract/classify` | ✅ Firebase token required |
+| `POST /api/contract/classify/batch` | ✅ Firebase token required |
+| `POST /api/contract/summarize` | ✅ Firebase token required |
+| `POST /api/contract/analyze` | ✅ Firebase token required |
+| `POST /api/contract/compare` | ✅ Firebase token required |
+| `POST /api/contract/rag/ingest` | ❌ Public |
+| `POST /api/contract/rag/ask` | ❌ Public |
+| `POST /api/contract/rag/summarize` | ❌ Public |
+| `DELETE /api/contract/rag/session/{id}` | ❌ Public |
+| `GET /api/contract/rag/health` | ❌ Public |
+| `GET /api/contract/rag/status` | ❌ Public |
+
+---
+
+## 3. Common Types
 
 These types appear in multiple endpoints.
 
@@ -119,9 +185,11 @@ Returned by all endpoints on failure.
 
 ---
 
-## 3. Upload
+## 4. Upload
 
 ### `POST /api/contract/upload`
+
+🔒 **Requires Firebase token**
 
 Upload a contract file and extract its text. Does **not** classify or segment — returns raw text only. Useful when you want to inspect the extracted text before running the full pipeline.
 
@@ -145,6 +213,7 @@ Upload a contract file and extract its text. Does **not** classify or segment �
 
 | Code | Condition |
 |------|-----------|
+| `401` | Missing or invalid Firebase token |
 | `400` | Unsupported file extension |
 | `413` | File exceeds 20 MB |
 | `500` | Extraction failure |
@@ -153,6 +222,7 @@ Upload a contract file and extract its text. Does **not** classify or segment �
 
 ```bash
 curl -X POST http://localhost:8000/api/contract/upload \
+  -H "Authorization: Bearer <firebase_token>" \
   -F "file=@contract.pdf"
 ```
 
@@ -168,11 +238,13 @@ curl -X POST http://localhost:8000/api/contract/upload \
 
 ---
 
-## 4. Segmentation
+## 5. Segmentation
 
 ### `POST /api/contract/segment`
 
-Segment raw Arabic contract text into individual clauses using the article-based extraction pipeline (المادة N patterns, sub-clause splitting, ordinal fallback).
+🔒 **Requires Firebase token**
+
+Segment raw Arabic contract text into individual clauses using the article-based extraction pipeline. Supports `المادة N`, `البند الأول/الثاني/...`, ordinal markers (`أولاً/ثانياً/...`), and paragraph fallback.
 
 **Request** — `application/json`
 
@@ -192,12 +264,14 @@ Segment raw Arabic contract text into individual clauses using the article-based
 
 | Code | Condition |
 |------|-----------|
+| `401` | Missing or invalid Firebase token |
 | `500` | Segmentation failure |
 
 **Example**
 
 ```bash
 curl -X POST http://localhost:8000/api/contract/segment \
+  -H "Authorization: Bearer <firebase_token>" \
   -H "Content-Type: application/json" \
   -d '{"text": "المادة الأولى: يلتزم الطرف الأول بتقديم الخدمة...\nالمادة الثانية: يحق للطرف الثاني..."}'
 ```
@@ -216,6 +290,8 @@ curl -X POST http://localhost:8000/api/contract/segment \
 ---
 
 ### `POST /api/contract/segment/file`
+
+🔒 **Requires Firebase token**
 
 Upload a file, extract its text, then segment into clauses in a single request.
 
@@ -240,6 +316,7 @@ Upload a file, extract its text, then segment into clauses in a single request.
 
 | Code | Condition |
 |------|-----------|
+| `401` | Missing or invalid Firebase token |
 | `400` | Unsupported file extension or no text extracted |
 | `413` | File exceeds 20 MB |
 | `500` | Processing failure |
@@ -248,6 +325,7 @@ Upload a file, extract its text, then segment into clauses in a single request.
 
 ```bash
 curl -X POST http://localhost:8000/api/contract/segment/file \
+  -H "Authorization: Bearer <firebase_token>" \
   -F "file=@contract.pdf"
 ```
 
@@ -267,9 +345,11 @@ curl -X POST http://localhost:8000/api/contract/segment/file \
 
 ---
 
-## 5. Classification
+## 6. Classification
 
 ### `POST /api/contract/classify`
+
+🔒 **Requires Firebase token**
 
 Classify a single clause into a type and risk level. Returns full probability distributions over all classes.
 
@@ -293,6 +373,7 @@ Classify a single clause into a type and risk level. Returns full probability di
 
 | Code | Condition |
 |------|-----------|
+| `401` | Missing or invalid Firebase token |
 | `500` | Classification failure |
 | `503` | Model checkpoint not found |
 
@@ -300,6 +381,7 @@ Classify a single clause into a type and risk level. Returns full probability di
 
 ```bash
 curl -X POST http://localhost:8000/api/contract/classify \
+  -H "Authorization: Bearer <firebase_token>" \
   -H "Content-Type: application/json" \
   -d '{"text": "يحق للطرف الأول إنهاء العقد في أي وقت دون إشعار مسبق."}'
 ```
@@ -331,6 +413,8 @@ curl -X POST http://localhost:8000/api/contract/classify \
 
 ### `POST /api/contract/classify/batch`
 
+🔒 **Requires Firebase token**
+
 Classify a list of clauses in one request. Uses the same model inference as the single endpoint but batched for efficiency.
 
 **Request** — `application/json`
@@ -350,6 +434,7 @@ Classify a list of clauses in one request. Uses the same model inference as the 
 
 | Code | Condition |
 |------|-----------|
+| `401` | Missing or invalid Firebase token |
 | `500` | Batch classification failure |
 | `503` | Model checkpoint not found |
 
@@ -357,6 +442,7 @@ Classify a list of clauses in one request. Uses the same model inference as the 
 
 ```bash
 curl -X POST http://localhost:8000/api/contract/classify/batch \
+  -H "Authorization: Bearer <firebase_token>" \
   -H "Content-Type: application/json" \
   -d '{
     "texts": [
@@ -372,7 +458,7 @@ curl -X POST http://localhost:8000/api/contract/classify/batch \
     {
       "predicted_type_clause": "payment_financial",
       "predicted_risk_level": "low",
-      "type_clause_probabilities": { "payment_financial": 0.9122, "..." : "..." },
+      "type_clause_probabilities": { "payment_financial": 0.9122, "...": "..." },
       "risk_level_probabilities": { "low": 0.9266, "medium": 0.0512, "high": 0.0222 },
       "warning": null
     },
@@ -390,9 +476,11 @@ curl -X POST http://localhost:8000/api/contract/classify/batch \
 
 ---
 
-## 6. Summarization
+## 7. Summarization
 
 ### `POST /api/contract/summarize`
+
+🔒 **Requires Firebase token**
 
 Generate a 3–5 sentence Arabic executive summary from the full contract text and its classified clauses. Powered by the configured LLM (Groq / Llama by default).
 
@@ -425,6 +513,7 @@ Generate a 3–5 sentence Arabic executive summary from the full contract text a
 
 | Code | Condition |
 |------|-----------|
+| `401` | Missing or invalid Firebase token |
 | `500` | LLM failure |
 | `503` | LLM service unavailable |
 
@@ -432,6 +521,7 @@ Generate a 3–5 sentence Arabic executive summary from the full contract text a
 
 ```bash
 curl -X POST http://localhost:8000/api/contract/summarize \
+  -H "Authorization: Bearer <firebase_token>" \
   -H "Content-Type: application/json" \
   -d '{
     "text": "عقد خدمات بين الطرفين...",
@@ -455,9 +545,11 @@ curl -X POST http://localhost:8000/api/contract/summarize \
 
 ---
 
-## 7. Full Analysis
+## 8. Full Analysis
 
 ### `POST /api/contract/analyze`
+
+🔒 **Requires Firebase token**
 
 **The recommended entry point.** Runs the complete pipeline in a single call:
 
@@ -480,7 +572,7 @@ curl -X POST http://localhost:8000/api/contract/summarize \
 |-------|------|-------------|
 | `filename` | `string` | Name of the uploaded file |
 | `is_scanned` | `boolean` | Whether OCR was applied |
-| `clauses` | `AnalyzedClause[]` | All classified clauses (see [Common Types](#2-common-types)) |
+| `clauses` | `AnalyzedClause[]` | All classified clauses (see [Common Types](#3-common-types)) |
 | `summary` | `string` | Arabic executive summary |
 | `stats` | `object` | Aggregate statistics (see below) |
 | `message` | `string` | `"تم تحليل العقد بنجاح واستخراج البنود والمخاطر."` |
@@ -499,6 +591,7 @@ curl -X POST http://localhost:8000/api/contract/summarize \
 
 | Code | Condition |
 |------|-----------|
+| `401` | Missing or invalid Firebase token |
 | `400` | Unsupported file type or no text extracted |
 | `413` | File exceeds 20 MB |
 | `500` | Pipeline failure |
@@ -508,6 +601,7 @@ curl -X POST http://localhost:8000/api/contract/summarize \
 
 ```bash
 curl -X POST http://localhost:8000/api/contract/analyze \
+  -H "Authorization: Bearer <firebase_token>" \
   -F "file=@contract.pdf"
 ```
 
@@ -550,9 +644,11 @@ curl -X POST http://localhost:8000/api/contract/analyze \
 
 ---
 
-## 8. Contract Comparison
+## 9. Contract Comparison
 
 ### `POST /api/contract/compare`
+
+🔒 **Requires Firebase token**
 
 Upload two contract files and receive a side-by-side comparison of their clauses, types, risk distributions, and structural differences.
 
@@ -573,8 +669,6 @@ Upload two contract files and receive a side-by-side comparison of their clauses
 | `message` | `string` | `"Contract comparison completed successfully"` |
 
 **`contract_summary` object**
-
-Each summary mirrors the `stats` shape from `/analyze` plus identifiers:
 
 | Field | Type | Description |
 |-------|------|-------------|
@@ -598,6 +692,7 @@ Each summary mirrors the `stats` shape from `/analyze` plus identifiers:
 
 | Code | Condition |
 |------|-----------|
+| `401` | Missing or invalid Firebase token |
 | `400` | Unsupported file extension for either file |
 | `413` | Either file exceeds 20 MB |
 | `500` | Comparison pipeline failure |
@@ -606,6 +701,7 @@ Each summary mirrors the `stats` shape from `/analyze` plus identifiers:
 
 ```bash
 curl -X POST http://localhost:8000/api/contract/compare \
+  -H "Authorization: Bearer <firebase_token>" \
   -F "file1=@contract_v1.pdf" \
   -F "file2=@contract_v2.pdf"
 ```
@@ -642,15 +738,17 @@ curl -X POST http://localhost:8000/api/contract/compare \
 
 ---
 
-## 9. RAG — Contract Q&A
+## 10. RAG — Contract Q&A
 
 The RAG (Retrieval-Augmented Generation) module enables conversational question-answering over a previously ingested contract. All endpoints are under `/api/contract/rag`.
+
+> **Note:** RAG endpoints are currently **public** (no authentication required).
 
 **Typical workflow:**
 ```
 POST /rag/ingest  →  store session_id
 POST /rag/ask     →  ask questions using session_id
-POST /rag/summarize (optional, standalone)
+POST /rag/summarize (optional, stateless)
 DELETE /rag/session/{session_id}  →  cleanup
 ```
 
@@ -874,7 +972,43 @@ Check that the RAG pipeline service is reachable.
 
 ---
 
-## 10. Error Handling
+### `GET /api/contract/rag/status`
+
+Check the current LLM provider status (Groq / Qwen local / Ollama).
+
+**Response `200`**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `status` | `string` | `"ok"` |
+| `service` | `string` | `"RAG Pipeline"` |
+| `provider` | `string` | Active LLM provider name |
+| `ready` | `boolean` | Whether the LLM is ready to serve requests |
+| `model` | `string` \| `null` | Model name/identifier |
+| `base_url` | `string` \| `null` | Base URL for remote providers |
+| `details` | `any` \| `null` | Additional provider-specific info |
+
+**Example**
+
+```bash
+curl http://localhost:8000/api/contract/rag/status
+```
+
+```json
+{
+  "status": "ok",
+  "service": "RAG Pipeline",
+  "provider": "groq",
+  "ready": true,
+  "model": "llama-3.1-8b-instant",
+  "base_url": null,
+  "details": null
+}
+```
+
+---
+
+## 11. Error Handling
 
 All endpoints return `ErrorResponse` on failure.
 
@@ -907,6 +1041,7 @@ Validation errors (422) include structured `details`:
 | `200` | Success |
 | `201` | Resource created (RAG ingest) |
 | `400` | Bad request — invalid file type, empty text, etc. |
+| `401` | Unauthorized — missing or invalid Firebase token |
 | `404` | Not found — RAG session does not exist |
 | `413` | File too large (> 20 MB) |
 | `422` | Validation error — missing or malformed JSON fields |
@@ -915,7 +1050,7 @@ Validation errors (422) include structured `details`:
 
 ---
 
-## 11. Configuration Reference
+## 12. Configuration Reference
 
 Settings are loaded from `backend/.env`. All variables have defaults.
 
@@ -927,6 +1062,7 @@ Settings are loaded from `backend/.env`. All variables have defaults.
 | `MAX_FILE_SIZE` | `20971520` (20 MB) | Maximum upload size in bytes |
 | `UPLOAD_DIR` | `./uploads` | Temporary file directory |
 | `ALLOWED_EXTENSIONS` | `.pdf .png .jpg .jpeg .tiff .bmp` | Accepted file extensions |
+| `FIREBASE_SERVICE_ACCOUNT_PATH` | — | Path to Firebase service account JSON key file |
 | `CLASSIFIER_MODEL_PATH` | `../models/checkpoints/aracontract_classifier.pt` | Path to the `.pt` checkpoint |
 | `MAX_SEQUENCE_LENGTH` | `512` | BERT tokenizer max length |
 | `EMBEDDING_MODEL_PATH` | `models_local/paraphrase-multilingual-MiniLM-L12-v2` | Sentence embedding model |
@@ -948,20 +1084,21 @@ Settings are loaded from `backend/.env`. All variables have defaults.
 
 ## Endpoint Quick Reference
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/` | API info |
-| `GET` | `/health` | Health check |
-| `POST` | `/api/contract/upload` | Upload file → extract text |
-| `POST` | `/api/contract/segment` | Segment text → clauses |
-| `POST` | `/api/contract/segment/file` | Upload file → extract → segment |
-| `POST` | `/api/contract/classify` | Classify single clause |
-| `POST` | `/api/contract/classify/batch` | Classify multiple clauses |
-| `POST` | `/api/contract/summarize` | Generate executive summary |
-| `POST` | `/api/contract/analyze` | Full pipeline (recommended) |
-| `POST` | `/api/contract/compare` | Compare two contracts |
-| `POST` | `/api/contract/rag/ingest` | Index clauses into vector store |
-| `POST` | `/api/contract/rag/ask` | Ask a question about the contract |
-| `POST` | `/api/contract/rag/summarize` | RAG-powered summary (stateless) |
-| `DELETE` | `/api/contract/rag/session/{id}` | Delete RAG session |
-| `GET` | `/api/contract/rag/health` | RAG service health |
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `GET` | `/` | ❌ | API info |
+| `GET` | `/health` | ❌ | Health check |
+| `POST` | `/api/contract/upload` | 🔒 | Upload file → extract text |
+| `POST` | `/api/contract/segment` | 🔒 | Segment text → clauses |
+| `POST` | `/api/contract/segment/file` | 🔒 | Upload file → extract → segment |
+| `POST` | `/api/contract/classify` | 🔒 | Classify single clause |
+| `POST` | `/api/contract/classify/batch` | 🔒 | Classify multiple clauses |
+| `POST` | `/api/contract/summarize` | 🔒 | Generate executive summary |
+| `POST` | `/api/contract/analyze` | 🔒 | Full pipeline (recommended) |
+| `POST` | `/api/contract/compare` | 🔒 | Compare two contracts |
+| `POST` | `/api/contract/rag/ingest` | ❌ | Index clauses into vector store |
+| `POST` | `/api/contract/rag/ask` | ❌ | Ask a question about the contract |
+| `POST` | `/api/contract/rag/summarize` | ❌ | RAG-powered summary (stateless) |
+| `DELETE` | `/api/contract/rag/session/{id}` | ❌ | Delete RAG session |
+| `GET` | `/api/contract/rag/health` | ❌ | RAG service health |
+| `GET` | `/api/contract/rag/status` | ❌ | LLM provider status |

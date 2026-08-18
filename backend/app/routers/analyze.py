@@ -148,7 +148,6 @@ async def analyze_contract(
             message="تم تحليل العقد بنجاح واستخراج البنود والمخاطر."
         )
 
-        # return JSONResponse(status_code=status.HTTP_200_OK, content=response.dict())
         return JSONResponse(status_code=status.HTTP_200_OK, content=response.model_dump())
 
     except Exception as e:
