@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>مساعد العقود الذكي</title>
+  <style>
+    :root { color-scheme: light; font-family: Tahoma, Arial, sans-serif; }
+    body { margin: 0; background: #f1f5f9; color: #172033; }
+    main { max-width: 860px; margin: 36px auto; padding: 24px; background: #fff; border-radius: 18px; box-shadow: 0 8px 30px #1e293b18; }
+    h1 { margin-top: 0; font-size: 1.55rem; } p { color: #475569; line-height: 1.7; }
+    label { display: block; font-weight: 700; margin-top: 18px; }
+    textarea, input { width: 100%; box-sizing: border-box; margin-top: 7px; padding: 11px; border: 1px solid #cbd5e1; border-radius: 9px; font: inherit; }
+    textarea { min-height: 150px; resize: vertical; } .question { display: flex; gap: 8px; }
+    button { margin-top: 12px; padding: 10px 16px; border: 0; border-radius: 9px; color: white; background: #0f766e; font: inherit; cursor: pointer; }
+    button.secondary { background: #64748b; margin-inline-start: 8px; } button:disabled { opacity: .55; cursor: wait; }
+    #status { min-height: 26px; margin: 14px 0 0; } #answer { display: none; margin-top: 18px; padding: 15px; border-radius: 10px; background: #f8fafc; }
+    #answer p { white-space: pre-wrap; color: #172033; } li { margin: 8px 0; line-height: 1.6; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>مساعد تحليل العقود</h1>
+    <p>أدخل بنداً واحداً في كل سطر، أنشئ جلسة RAG، ثم اسأل عن محتوى العقد.</p>
+    <label for="clauses">بنود العقد</label>
+    <textarea id="clauses">المادة الأولى: يلتزم الطرف الأول بتقديم الخدمة المتفق عليها خلال خمسة أيام عمل.
+المادة الثانية: يلتزم الطرف الثاني بسداد المستحقات خلال ثلاثين يوماً من تاريخ الفاتورة.
+المادة الثالثة: يحق للطرف الأول إنهاء العقد دون إشعار مسبق عند إخلال الطرف الثاني بالتزاماته.</textarea>
+    <button id="ingest">بدء جلسة RAG</button><button id="cleanup" class="secondary" disabled>إنهاء الجلسة</button>
+    <p id="status" role="status"></p>
+    <label for="question">سؤالك</label>
+    <div class="question"><input id="question" value="هل يمكن إنهاء العقد دون إشعار مسبق؟"><button id="ask" disabled>اسأل</button></div>
+    <section id="answer" aria-live="polite"></section>
+  </main>
+  <script>window.__RAG_API_BASE__ = "";</script>
+  <script>
+    (() => {
+      const apiBase = window.__RAG_API_BASE__.replace(/\/$/, '');
+      let sessionId = null;
+      const byId = id => document.getElementById(id);
+      const status = byId('status'), answer = byId('answer'), ingest = byId('ingest'), ask = byId('ask'), cleanup = byId('cleanup');
+      const errorFor = async response => { const body = await response.json().catch(() => ({})); return body.detail || body.message || `HTTP ${response.status}`; };
+      const request = async (path, options) => { if (!apiBase) throw new Error('لم يتم ضبط رابط RAG API.'); const response = await fetch(`${apiBase}${path}`, options); if (!response.ok) throw new Error(await errorFor(response)); return response.json(); };
+      ingest.addEventListener('click', async () => {
+        const clauses = byId('clauses').value.split('\n').map(text => text.trim()).filter(Boolean);
+        if (!clauses.length) return;
+        ingest.disabled = true; status.textContent = 'جارٍ استيعاب البنود...';
+        try { const data = await request('/ingest', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({clauses})}); sessionId = data.session_id; ask.disabled = cleanup.disabled = false; status.textContent = `الجلسة جاهزة: ${data.clauses_count} بنود`; }
+        catch (error) { status.textContent = `خطأ: ${error.message}`; } finally { ingest.disabled = false; }
+      });
+      ask.addEventListener('click', async () => {
+        const question = byId('question').value.trim(); if (!sessionId || question.length < 3) return;
+        ask.disabled = true; status.textContent = 'جارٍ البحث وتوليد الإجابة...';
+        try { const data = await request('/ask', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({session_id: sessionId, question, top_k: 3})}); answer.replaceChildren(); const text = document.createElement('p'); text.textContent = data.answer; const title = document.createElement('strong'); title.textContent = 'المصادر المسترجعة:'; const list = document.createElement('ol'); data.retrieved_clauses.forEach(item => { const li = document.createElement('li'); li.textContent = `${item.parent_text} (الدرجة: ${item.score})`; list.append(li); }); answer.append(text, title, list); answer.style.display = 'block'; status.textContent = 'تمت الإجابة.'; }
+        catch (error) { status.textContent = `خطأ: ${error.message}`; } finally { ask.disabled = false; }
+      });
+      cleanup.addEventListener('click', async () => { if (!sessionId) return; try { await request(`/session/${sessionId}`, {method: 'DELETE'}); } catch (_) {} sessionId = null; ask.disabled = cleanup.disabled = true; answer.style.display = 'none'; status.textContent = 'تم إنهاء الجلسة.'; });
+    })();
+  </script>
+</body>
+</html>
